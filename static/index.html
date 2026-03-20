@@ -443,20 +443,63 @@ function scoreColor(s) {
 
 ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
-  
+
   if (msg.type === 'telemetry') {
     procs = msg.data.map(p => ({
-      pid: p.pid,
-      ppid: p.ppid,
-      name: p.name,
-      score: p.cpu_percent / 100, // Use CPU load as a proxy for dummy score if not provided
-      a: p.cpu_percent > 75 // Simple anomaly proxy
+      pid:   p.pid,
+      ppid:  p.ppid,
+      name:  p.name,
+      score: p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100,
+      a:     (p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100) > 0.75
     }));
     updateUI();
+
+    // ── Header live metrics ──────────────────────────────────
+    if (msg.tx_count !== undefined)
+      document.getElementById('h-commits').textContent = msg.tx_count;
+    if (msg.latency_ms !== undefined)
+      document.getElementById('h-lat').textContent = msg.latency_ms + 'ms';
+
+    // ── Graph HUD ───────────────────────────────────────────
+    if (msg.edge_count !== undefined)
+      document.getElementById('hud-e').textContent = msg.edge_count;
+    if (msg.loss !== undefined) {
+      document.getElementById('hud-l').textContent  = msg.loss.toFixed(4);
+      document.getElementById('fm-l').textContent   = msg.loss.toFixed(4);
+    }
+
+    // ── Footer graph metric ──────────────────────────────────
+    if (msg.edge_count !== undefined)
+      document.getElementById('fm-g').textContent =
+        `${procs.length}N·${msg.edge_count}E`;
+
+    // ── Footer feed (normal cycle status) ───────────────────
+    if (msg.feed_msg)
+      document.getElementById('ftr-feed').textContent = '> ' + msg.feed_msg;
+
+    // ── Anomaly chart ────────────────────────────────────────
+    const aScore = msg.anomaly_score ?? 0;
+    anomChart.data.datasets[0].data.push(aScore);
+    anomChart.data.datasets[0].data.shift();
+    anomChart.data.datasets[0].borderColor =
+      aScore > 0.75 ? '#ff2d55' : aScore > 0.40 ? '#ffd60a' : '#39ff14';
+    anomChart.update('none');
+
+    // ── Latency chart ────────────────────────────────────────
+    const lat = msg.latency_ms ?? 0;
+    latChart.data.datasets[0].data.push(lat);
+    latChart.data.datasets[0].data.shift();
+    latChart.data.datasets[0].backgroundColor = lat < 500 ? '#39ff14' : '#ff2d55';
+    latChart.update('none');
+
   } else if (msg.type === 'alert') {
     addBlock(msg.is_critical);
     updateAlertStrip(msg.msg);
     logFeed(msg.msg);
+    if (msg.tx_count !== undefined)
+      document.getElementById('h-commits').textContent = msg.tx_count;
+    if (msg.latency_ms !== undefined)
+      document.getElementById('h-lat').textContent = msg.latency_ms + 'ms';
   }
 };
 
@@ -472,7 +515,8 @@ function updateStats() {
   document.getElementById('h-anom').textContent = anoms;
   document.getElementById('proc-anom-badge').textContent = `${anoms} ANOM`;
   document.getElementById('hud-n').textContent = procs.length;
-  document.getElementById('fm-g').textContent = `${procs.length}N·${procs.length-1}E`;
+  // hud-e, fm-g, fm-l are updated directly from the telemetry message
+  // which carries edge_count and loss from the backend
 }
 
 function updateAlertStrip(msg) {
@@ -579,7 +623,7 @@ const anomChart = new Chart(anomCtx, {
 const latCtx = document.getElementById('lat-chart').getContext('2d');
 const latChart = new Chart(latCtx, {
   type: 'bar',
-  data: { labels: Array(60).fill(''), datasets: [{ data: Array(60).fill(142), backgroundColor: '#39ff14' }] },
+  data: { labels: Array(60).fill(''), datasets: [{ data: Array(60).fill(0), backgroundColor: '#39ff14' }] },
   options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{min:0,max:500}} }
 });
 
