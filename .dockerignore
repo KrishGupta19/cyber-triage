@@ -1,0 +1,25 @@
+# Node
+node_modules/
+package.json
+package-lock.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Reports (generated at runtime)
+reports/
+
+# Screenshots
+dashboard_screenshot.png
+
+# Git
+.git/
+
+# Docs
+*.docx
+
+# PowerShell scripts (Windows-only)
+*.ps1

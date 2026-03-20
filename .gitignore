@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Node
+node_modules/
+package-lock.json
+
+# Reports (generated at runtime)
+reports/
+
+# Claude Code local config
+.claude/
+
+# Screenshots
+dashboard_screenshot.png
+
+# Runtime data
+data/current_telemetry.json
+
+# Docs
+*.docx

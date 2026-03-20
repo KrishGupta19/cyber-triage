@@ -1,0 +1,8 @@
+psutil
+fastapi
+uvicorn
+networkx
+torch
+torch-geometric
+python-multipart
+requests

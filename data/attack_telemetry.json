@@ -1,0 +1,39 @@
+[
+    {
+        "pid": 9001,
+        "ppid": 1,
+        "name": "sshd"
+    },
+    {
+        "pid": 9002,
+        "ppid": 9001,
+        "name": "bash"
+    },
+    {
+        "pid": 9003,
+        "ppid": 9002,
+        "name": "nc"
+    },
+    {
+        "pid": 800,
+        "ppid": 1,
+        "name": "nginx"
+    },
+    {
+        "pid": 9999,
+        "ppid": 800,
+        "name": "crypt0miner.elf",
+        "cpu_percent": 98.5
+    },
+    {
+        "pid": 500,
+        "ppid": 1,
+        "name": "bash"
+    },
+    {
+        "pid": 9921,
+        "ppid": 500,
+        "name": "pkexec",
+        "findings": "Possible SUID exploit"
+    }
+]

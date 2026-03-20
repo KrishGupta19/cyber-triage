@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberTriage OS — v2.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Oxanium:wght@300;400;600;800&display=swap');
+
+:root {
+  --bg0: #000509;
+  --bg1: #020d18;
+  --bg2: #041525;
+  --bg3: #071e34;
+  --c: #00d4ff;
+  --c2: #00ffcc;
+  --r: #ff2d55;
+  --y: #ffd60a;
+  --g: #39ff14;
+  --o: #ff6b00;
+  --p: #bf5af2;
+  --dim: rgba(0,212,255,0.12);
+  --dim2: rgba(0,212,255,0.05);
+  --mono: 'JetBrains Mono', monospace;
+  --head: 'Oxanium', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+
+body {
+  background: var(--bg0);
+  color: rgba(200,230,245,0.9);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+/* ─── SCAN OVERLAY ─── */
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:9000; pointer-events:none;
+  background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);
+}
+
+/* ─── GRID BACKGROUND ─── */
+#grid-bg {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px),
+    linear-gradient(rgba(0,212,255,0.015) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,0.015) 1px,transparent 1px);
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+}
+
+/* ─── RADAR ANIMATION ─── */
+#radar-bg {
+  position:fixed; bottom:-200px; right:-200px; z-index:0; pointer-events:none;
+  width:600px; height:600px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(0,212,255,0.03) 0%, transparent 70%);
+  animation: radarSpin 8s linear infinite;
+}
+#radar-bg::after {
+  content:'';
+  position:absolute; inset:0;
+  background: conic-gradient(from 0deg, rgba(0,212,255,0.08) 0deg, transparent 60deg);
+  border-radius:50%;
+  animation: radarSpin 8s linear infinite;
+}
+@keyframes radarSpin { to { transform: rotate(360deg); } }
+
+/* ─── LAYOUT ─── */
+#app {
+  position:relative; z-index:1;
+  display:grid;
+  grid-template-rows: 48px 1fr 32px;
+  height:100vh;
+}
+
+/* ─── HEADER ─── */
+#hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0,212,255,0.2);
+  background: rgba(0,8,18,0.95);
+  backdrop-filter: blur(10px);
+}
+.hdr-brand {
+  display:flex; align-items:center; gap:10px;
+}
+.hdr-logo {
+  font-family: var(--head);
+  font-size: 15px; font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--c);
+  text-shadow: 0 0 20px rgba(0,212,255,0.5);
+}
+.hdr-logo em { color: var(--r); font-style:normal; }
+.hdr-badge {
+  font-size: 9px; letter-spacing: 2px;
+  padding: 2px 6px;
+  border: 1px solid rgba(0,212,255,0.3);
+  color: rgba(0,212,255,0.6);
+}
+.hdr-center {
+  display:flex; align-items:center; gap:24px;
+}
+.hdr-stat {
+  text-align:center;
+}
+.hdr-stat .val {
+  font-family: var(--head);
+  font-size: 16px; font-weight: 800;
+  display:block;
+}
+.hdr-stat .lbl {
+  font-size: 8px; letter-spacing: 2px;
+  color: rgba(200,230,245,0.4);
+}
+.hdr-right {
+  display:flex; align-items:center; gap:16px;
+  font-size: 10px; color: rgba(200,230,245,0.4);
+}
+.hdr-right .time { color: var(--c); font-weight:700; }
+.live-dot {
+  width:7px; height:7px; border-radius:50%;
+  background: var(--g);
+  box-shadow: 0 0 8px var(--g);
+  animation: blink 1s ease-in-out infinite;
+  display:inline-block;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* ─── MAIN GRID ─── */
+#main {
+  display:grid;
+  grid-template-columns: 220px 1fr 1fr 200px;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  background: rgba(0,212,255,0.07);
+  overflow:hidden;
+}
+
+/* ─── PANEL BASE ─── */
+.pnl {
+  background: linear-gradient(145deg, rgba(4,21,37,0.97), rgba(2,13,24,0.99));
+  overflow:hidden; position:relative;
+  display:flex; flex-direction:column;
+}
+.pnl::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background: linear-gradient(90deg,transparent,var(--c),transparent);
+  opacity:0.3;
+}
+.pnl-title {
+  font-family: var(--head);
+  font-size: 8px; letter-spacing: 3px;
+  color: rgba(0,212,255,0.6);
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid rgba(0,212,255,0.07);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+}
+.pnl-title .badge2 {
+  font-size:8px; padding:1px 5px;
+  border-radius:2px;
+}
+
+/* ─── PANEL SPANS ─── */
+#p-processes { grid-row: 1 / 3; }
+#p-graph     { grid-column: 2 / 4; grid-row: 1; }
+#p-anomaly   { grid-column: 2; grid-row: 2; }
+#p-latency   { grid-column: 3; grid-row: 2; }
+#p-chain     { grid-row: 1 / 3; }
+
+/* ─── PROCESS LIST ─── */
+.proc-scroll {
+  flex:1; overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
+}
+.proc-item {
+  display:grid;
+  grid-template-columns: 8px 38px 38px 1fr 44px;
+  gap: 6px; align-items:center;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(0,212,255,0.04);
+  cursor:pointer; transition: background 0.15s;
+  font-size: 10px;
+}
+.proc-item:hover { background: rgba(0,212,255,0.05); }
+.proc-item.anom { background: rgba(255,45,85,0.06); }
+.proc-item.anom:hover { background: rgba(255,45,85,0.1); }
+.proc-dot {
+  width:7px; height:7px; border-radius:50%;
+  flex-shrink:0;
+}
+.proc-pid { color: rgba(200,230,245,0.45); }
+.proc-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.proc-score { text-align:right; font-weight:700; font-size:10px; }
+.proc-bar-wrap {
+  padding: 0 10px 1px; flex-shrink:0;
+}
+.proc-bar {
+  height:2px; background:rgba(0,212,255,0.07); border-radius:1px; margin-bottom:1px;
+}
+.proc-bar-fill { height:100%; border-radius:1px; }
+
+/* ─── GRAPH CANVAS ─── */
+#p-graph { position:relative; }
+#graph-canvas {
+  width:100%; height:100%;
+  display:block; cursor:crosshair;
+}
+.graph-hud {
+  position:absolute; top:8px; right:10px;
+  display:flex; flex-direction:column; gap:3px; align-items:flex-end;
+}
+.hud-item {
+  font-size:9px; letter-spacing:1px;
+  color: rgba(0,212,255,0.45);
+  background: rgba(0,8,18,0.7);
+  padding: 1px 5px;
+}
+
+/* ─── CHARTS ─── */
+#p-anomaly canvas, #p-latency canvas {
+  flex:1; min-height:0; padding:4px 10px 8px;
+}
+
+/* ─── CHAIN LOG ─── */
+.chain-scroll {
+  flex:1; overflow-y:auto; padding:6px;
+  scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
+}
+.block {
+  padding: 7px 8px; margin-bottom:5px;
+  border: 1px solid rgba(0,212,255,0.1);
+  background: rgba(0,6,15,0.6);
+  font-size: 10px;
+  animation: slideIn .35s ease;
+  cursor:pointer; transition:border-color .2s;
+  position:relative; overflow:hidden;
+}
+.block::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+}
+.block.anom-blk::before { background:var(--r); box-shadow:0 0 6px var(--r); }
+.block.norm-blk::before { background:var(--g); }
+.block:hover { border-color:rgba(0,212,255,0.35); }
+@keyframes slideIn { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:none} }
+.blk-hdr { display:flex; justify-content:space-between; margin-bottom:4px; }
+.blk-num { color:var(--c); font-weight:700; }
+.blk-time { color:rgba(200,230,245,0.3); font-size:9px; }
+.blk-hash { color:rgba(200,230,245,0.25); font-size:9px; margin-bottom:4px; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.blk-row { display:flex; justify-content:space-between; }
+.blk-pid { color:var(--y); }
+
+/* ─── FOOTER ─── */
+#ftr {
+  display:flex; align-items:center; gap:16px;
+  padding: 0 14px;
+  background: rgba(0,4,10,0.98);
+  border-top: 1px solid rgba(0,212,255,0.15);
+  font-size: 10px;
+}
+.ftr-tag { color:var(--c2); letter-spacing:1px; flex-shrink:0; }
+.ftr-feed { flex:1; color:var(--g); white-space:nowrap; overflow:hidden; }
+.ftr-metrics { display:flex; gap:14px; color:rgba(200,230,245,0.35); flex-shrink:0; }
+.ftr-metrics span { white-space:nowrap; }
+.ftr-metrics .mv { color:var(--c); }
+
+/* ─── ALERT STRIP ─── */
+#alert-strip {
+  position:fixed; top:48px; left:0; right:0; z-index:500;
+  height:22px; display:flex; align-items:center;
+  background: linear-gradient(90deg, rgba(255,45,85,0.18), rgba(255,45,85,0.04));
+  border-bottom: 1px solid rgba(255,45,85,0.25);
+  overflow:hidden;
+  pointer-events:none;
+}
+.alert-tag {
+  flex-shrink:0;
+  background:var(--r); color:#000; font-weight:700;
+  font-size:9px; letter-spacing:2px;
+  padding: 0 8px; height:100%; display:flex; align-items:center;
+  margin-right:10px;
+}
+.alert-text {
+  font-size:10px; color:var(--r); white-space:nowrap;
+  animation: ticker 30s linear infinite;
+  letter-spacing:.5px;
+}
+@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+/* scrollbars */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:2px}
+
+/* ─── ANOMALY FLASH ─── */
+@keyframes flashRed {
+  0%,100%{box-shadow:inset 0 0 0 1px transparent}
+  50%{box-shadow:inset 0 0 0 1px rgba(255,45,85,0.6)}
+}
+.flash { animation: flashRed .4s ease; }
+</style>
+</head>
+<body>
+<div id="grid-bg"></div>
+<div id="radar-bg"></div>
+
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="hdr">
+    <div class="hdr-brand">
+      <div class="hdr-logo">CYBER<em>TRIAGE</em></div>
+      <div class="hdr-badge">DECENTRALISED · GNN · HLF v2.x</div>
+      <span class="live-dot" style="margin-left:4px"></span>
+    </div>
+    <div class="hdr-center">
+      <div class="hdr-stat">
+        <span class="val" id="h-procs" style="color:var(--c)">0</span>
+        <span class="lbl">PROCESSES</span>
+      </div>
+      <div class="hdr-stat">
+        <span class="val" id="h-anom" style="color:var(--r)">0</span>
+        <span class="lbl">ANOMALIES</span>
+      </div>
+      <div class="hdr-stat">
+        <span class="val" id="h-commits" style="color:var(--g)">0</span>
+        <span class="lbl">TX COMMITTED</span>
+      </div>
+      <div class="hdr-stat">
+        <span class="val" id="h-acc" style="color:var(--y)">96.4%</span>
+        <span class="lbl">GNN ACCURACY</span>
+      </div>
+      <div class="hdr-stat">
+        <span class="val" id="h-lat" style="color:var(--o)">142ms</span>
+        <span class="lbl">HLF LATENCY</span>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <span><span class="live-dot"></span> 4/4 PEERS</span>
+      <span>EPOCH <span class="time" id="h-epoch">0</span></span>
+      <span class="time" id="h-time">--:--:--</span>
+    </div>
+  </div>
+
+  <!-- ALERT STRIP -->
+  <div id="alert-strip">
+    <div class="alert-tag">⚠ ALERT</div>
+    <div class="alert-text" id="alert-txt">
+      SYSTEM NOMINAL &nbsp;|&nbsp; WAITING FOR DATA FROM CORE ENGINE...
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main" style="margin-top:22px; height:calc(100% - 22px);">
+
+    <!-- LEFT: PROCESS LIST -->
+    <div class="pnl" id="p-processes">
+      <div class="pnl-title">
+        PROCESS NODES
+        <span class="badge2" id="proc-anom-badge" style="background:rgba(255,45,85,0.15);color:var(--r)">0 ANOM</span>
+      </div>
+      <div class="proc-scroll" id="proc-list"></div>
+    </div>
+
+    <!-- CENTER: GRAPH -->
+    <div class="pnl" id="p-graph">
+      <div class="pnl-title">
+        PROCESS DAG — GNN GRAPH RECONSTRUCTION
+        <span class="badge2" style="background:rgba(0,212,255,0.1);color:var(--c)">LIVE</span>
+      </div>
+      <canvas id="graph-canvas"></canvas>
+      <div class="graph-hud">
+        <div class="hud-item">NODES: <span id="hud-n">0</span></div>
+        <div class="hud-item">EDGES: <span id="hud-e">0</span></div>
+        <div class="hud-item">LOSS: <span id="hud-l">0.0000</span></div>
+        <div class="hud-item">THRESHOLD: 0.75</div>
+      </div>
+    </div>
+
+    <!-- ANOMALY SCORE CHART -->
+    <div class="pnl" id="p-anomaly">
+      <div class="pnl-title">
+        ANOMALY SCORE TIMELINE
+        <span class="badge2" style="background:rgba(255,107,0,0.15);color:var(--o)">ROLLING 60s</span>
+      </div>
+      <canvas id="anom-chart"></canvas>
+    </div>
+
+    <!-- LATENCY CHART -->
+    <div class="pnl" id="p-latency">
+      <div class="pnl-title">
+        FABRIC TX LATENCY (ms)
+        <span class="badge2" style="background:rgba(57,255,20,0.12);color:var(--g)">SLA &lt;500ms</span>
+      </div>
+      <canvas id="lat-chart"></canvas>
+    </div>
+
+    <!-- RIGHT: CHAIN LOG -->
+    <div class="pnl" id="p-chain">
+      <div class="pnl-title">
+        HYPERLEDGER FABRIC
+        <span class="badge2" style="background:rgba(191,90,242,0.15);color:var(--p)">IMMUTABLE</span>
+      </div>
+      <div class="chain-scroll" id="chain-log"></div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div id="ftr">
+    <span class="ftr-tag">&gt;&gt;</span>
+    <div class="ftr-feed" id="ftr-feed">Initializing GNN Autoencoder...</div>
+    <div class="ftr-metrics">
+      <span>GRAPH: <span class="mv" id="fm-g">0N·0E</span></span>
+      <span>LOSS: <span class="mv" id="fm-l">0.0000</span></span>
+      <span>CHANNEL: <span class="mv">cytriage-ch1</span></span>
+      <span>ORDERER: <span class="mv">RAFT</span></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// WEBSOCKET INTEGRATION
+// ════════════════════════════════════════════════
+const ws = new WebSocket(`ws://${window.location.host}/ws`);
+let procs = [];
+let blkNum = 1200;
+
+function scoreColor(s) {
+  if (s > 0.75) return '#ff2d55';
+  if (s > 0.40) return '#ffd60a';
+  return '#39ff14';
+}
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  
+  if (msg.type === 'telemetry') {
+    procs = msg.data.map(p => ({
+      pid: p.pid,
+      ppid: p.ppid,
+      name: p.name,
+      score: p.cpu_percent / 100, // Use CPU load as a proxy for dummy score if not provided
+      a: p.cpu_percent > 75 // Simple anomaly proxy
+    }));
+    updateUI();
+  } else if (msg.type === 'alert') {
+    addBlock(msg.is_critical);
+    updateAlertStrip(msg.msg);
+    logFeed(msg.msg);
+  }
+};
+
+function updateUI() {
+  buildProcList();
+  drawGraph();
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('h-procs').textContent = procs.length;
+  const anoms = procs.filter(p => p.score > 0.75).length;
+  document.getElementById('h-anom').textContent = anoms;
+  document.getElementById('proc-anom-badge').textContent = `${anoms} ANOM`;
+  document.getElementById('hud-n').textContent = procs.length;
+  document.getElementById('fm-g').textContent = `${procs.length}N·${procs.length-1}E`;
+}
+
+function updateAlertStrip(msg) {
+  const el = document.getElementById('alert-txt');
+  el.textContent = msg + " | " + el.textContent;
+}
+
+function logFeed(msg) {
+  document.getElementById('ftr-feed').textContent = '> ' + msg;
+}
+
+// ════════════════════════════════════════════════
+// CLOCK
+// ════════════════════════════════════════════════
+let epoch = 0;
+function tick() {
+  document.getElementById('h-time').textContent = new Date().toTimeString().slice(0,8);
+}
+setInterval(tick,1000); tick();
+setInterval(() => { epoch++; document.getElementById('h-epoch').textContent = epoch; }, 10000);
+
+// ════════════════════════════════════════════════
+// PROCESS LIST
+// ════════════════════════════════════════════════
+function buildProcList() {
+  const el = document.getElementById('proc-list');
+  el.innerHTML = procs.map(p => {
+    const col = scoreColor(p.score);
+    const cls = p.a ? 'anom' : '';
+    return `
+    <div class="proc-item ${cls}">
+      <span class="proc-dot" style="background:${col};box-shadow:0 0 5px ${col}"></span>
+      <span class="proc-pid">${p.pid}</span>
+      <span class="proc-pid">${p.ppid}</span>
+      <span class="proc-name" title="${p.name}">${p.name}</span>
+      <span class="proc-score" style="color:${col}">${p.score.toFixed(2)}</span>
+    </div>
+    <div class="proc-bar-wrap">
+      <div class="proc-bar"><div class="proc-bar-fill" style="width:${p.score*100}%;background:${col};opacity:.7"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+// GRAPH CANVAS
+// ════════════════════════════════════════════════
+const gc = document.getElementById('graph-canvas');
+const gctx = gc.getContext('2d');
+let animFrame = 0;
+
+function drawGraph() {
+  const rect = gc.parentElement.getBoundingClientRect();
+  gc.width = rect.width;
+  gc.height = rect.height - 32;
+  const W = gc.width, H = gc.height;
+  const ctx = gctx;
+  ctx.clearRect(0, 0, W, H);
+  animFrame++;
+
+  if (procs.length === 0) return;
+
+  const pos = {};
+  procs.forEach((p, i) => {
+    pos[p.pid] = {
+      x: (W / (procs.length + 1)) * (i + 1),
+      y: H / 2 + Math.sin(animFrame * 0.02 + i) * (H / 4)
+    };
+  });
+
+  // Draw edges
+  procs.forEach(p => {
+    if (!pos[p.pid] || !pos[p.ppid]) return;
+    const f = pos[p.ppid], t = pos[p.pid];
+    ctx.beginPath();
+    ctx.moveTo(f.x, f.y);
+    ctx.lineTo(t.x, t.y);
+    ctx.strokeStyle = p.a ? '#ff2d55' : 'rgba(0,212,255,0.3)';
+    ctx.stroke();
+  });
+
+  // Draw nodes
+  procs.forEach(p => {
+    const pt = pos[p.pid];
+    const col = p.a ? '#ff2d55' : '#00d4ff';
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 6, 0, Math.PI*2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.fillText(p.name, pt.x, pt.y + 15);
+  });
+}
+setInterval(drawGraph, 50);
+
+// ════════════════════════════════════════════════
+// CHARTS (Simplified initialization)
+// ════════════════════════════════════════════════
+const anomCtx = document.getElementById('anom-chart').getContext('2d');
+const anomChart = new Chart(anomCtx, {
+  type: 'line',
+  data: { labels: Array(60).fill(''), datasets: [{ data: Array(60).fill(0), borderColor: '#ff2d55', fill: true }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{min:0,max:1}} }
+});
+
+const latCtx = document.getElementById('lat-chart').getContext('2d');
+const latChart = new Chart(latCtx, {
+  type: 'bar',
+  data: { labels: Array(60).fill(''), datasets: [{ data: Array(60).fill(142), backgroundColor: '#39ff14' }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{min:0,max:500}} }
+});
+
+// ════════════════════════════════════════════════
+// BLOCKCHAIN LOG
+// ════════════════════════════════════════════════
+function addBlock(isAnom) {
+  blkNum++;
+  const log = document.getElementById('chain-log');
+  const div = document.createElement('div');
+  div.className = `block ${isAnom?'anom-blk':'norm-blk'}`;
+  div.innerHTML = `
+    <div class="blk-hdr"><span class="blk-num">#${blkNum}</span></div>
+    <div class="blk-hash">${Math.random().toString(36).substring(7)}</div>
+    <div class="blk-row"><span class="blk-pid">TX COMMITTED</span></div>`;
+  log.insertBefore(div, log.firstChild);
+}
+
+</script>
+</body>
+</html>

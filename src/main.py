@@ -1,0 +1,77 @@
+from collector import collect_processes, save_telemetry
+from graph_builder import build_process_graph, convert_to_pyg
+from model import GNNAutoencoder, get_anomaly_score
+from blockchain_client import BlockchainClient
+from forensic_reporter import ForensicReporter
+import torch
+import time
+import json
+import os
+
+class CyberTriageEngine:
+    """Ties all modules together into a unified cyber triage pipeline."""
+    def __init__(self):
+        print("Initializing Cyber Triage Engine v1.0.0-PRO...")
+        self.blockchain = BlockchainClient()
+        self.reporter = ForensicReporter()
+        # Initialize GNN Autoencoder
+        self.model = GNNAutoencoder(in_channels=16, latent_channels=8)
+        self.model.eval()
+
+    def run_cycle(self):
+        """Runs one detection-to-logging cycle."""
+        print("\n" + "="*40)
+        print("CRITICAL MONITORING CYCLE START")
+        print("="*40)
+        
+        # 1. Data Collection
+        telemetry = collect_processes()
+        save_telemetry(telemetry, 'data/current_telemetry.json')
+        
+        # 2. Graph Construction
+        graph = build_process_graph(telemetry)
+        pyg_data = convert_to_pyg(graph)
+        
+        # 3. Anomaly Detection
+        with torch.no_grad():
+            z, adj_hat, x_hat = self.model(pyg_data)
+            # Calculate per-node scores
+            scores = get_anomaly_score(pyg_data, adj_hat, x_hat)
+            max_score = torch.max(scores).item()
+            suspicious_idx = torch.argmax(scores).item()
+            
+        print(f"Max Anomaly Score detected: {max_score:.4f}")
+        
+        # 4. Forensic Reporting & Blockchain Commitment
+        if max_score > 0.75:
+            print("!!! SUSPICIOUS ACTIVITY DETECTED !!!")
+            
+            # Map back to telemetry
+            suspicious_pid = list(graph.nodes())[suspicious_idx]
+            # Find the process info
+            proc_info = next((p for p in telemetry if p['pid'] == suspicious_pid), None)
+            
+            if proc_info:
+                name = proc_info['name']
+                print(f"Flagged Process: {name} (PID: {suspicious_pid})")
+                
+                # Generate Forensic Report
+                findings = f"GNN Anomaly Score {max_score:.4f} exceeded threshold 0.75. Behavioral deviation in child-parent lineage."
+                report, report_path = self.reporter.generate_report(suspicious_pid, name, max_score, findings)
+                
+                # Commit to Hyperledger Fabric
+                tx_id, r_hash = self.blockchain.log_anomaly_event(suspicious_pid, max_score, name, report)
+                print(f"Blockchain TX: {tx_id} | Forensic Hash: {r_hash}")
+        else:
+            print("System Integrity: VALIDATED (All nodes within baseline)")
+
+if __name__ == "__main__":
+    engine = CyberTriageEngine()
+    print("Cyber Triage Agent is now active and monitoring...")
+    while True:
+        try:
+            engine.run_cycle()
+            time.sleep(10)
+        except KeyboardInterrupt:
+            print("\nShutting down engine...")
+            break
