@@ -13,14 +13,14 @@
   --bg1: #020d18;
   --bg2: #041525;
   --bg3: #071e34;
-  --c: #00d4ff;
-  --c2: #00ffcc;
-  --r: #ff2d55;
-  --y: #ffd60a;
-  --g: #39ff14;
-  --o: #ff6b00;
-  --p: #bf5af2;
-  --dim: rgba(0,212,255,0.12);
+  --c:   #00d4ff;
+  --c2:  #00ffcc;
+  --r:   #ff2d55;
+  --y:   #ffd60a;
+  --g:   #39ff14;
+  --o:   #ff6b00;
+  --p:   #bf5af2;
+  --dim:  rgba(0,212,255,0.12);
   --dim2: rgba(0,212,255,0.05);
   --mono: 'JetBrains Mono', monospace;
   --head: 'Oxanium', sans-serif;
@@ -28,22 +28,15 @@
 
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; }
+body { background:var(--bg0); color:rgba(200,230,245,0.9); font-family:var(--mono); font-size:12px; }
 
-body {
-  background: var(--bg0);
-  color: rgba(200,230,245,0.9);
-  font-family: var(--mono);
-  font-size: 12px;
-}
-
-/* ─── SCAN OVERLAY ─── */
+/* ─── SCANLINE OVERLAY ─── */
 body::before {
-  content:'';
-  position:fixed; inset:0; z-index:9000; pointer-events:none;
+  content:''; position:fixed; inset:0; z-index:9000; pointer-events:none;
   background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);
 }
 
-/* ─── GRID BACKGROUND ─── */
+/* ─── GRID BG ─── */
 #grid-bg {
   position:fixed; inset:0; z-index:0; pointer-events:none;
   background-image:
@@ -54,283 +47,396 @@ body::before {
   background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
 }
 
-/* ─── RADAR ANIMATION ─── */
+/* ─── RADAR ─── */
 #radar-bg {
   position:fixed; bottom:-200px; right:-200px; z-index:0; pointer-events:none;
-  width:600px; height:600px;
-  border-radius:50%;
+  width:600px; height:600px; border-radius:50%;
   background: radial-gradient(circle, rgba(0,212,255,0.03) 0%, transparent 70%);
   animation: radarSpin 8s linear infinite;
 }
 #radar-bg::after {
-  content:'';
-  position:absolute; inset:0;
+  content:''; position:absolute; inset:0; border-radius:50%;
   background: conic-gradient(from 0deg, rgba(0,212,255,0.08) 0deg, transparent 60deg);
-  border-radius:50%;
   animation: radarSpin 8s linear infinite;
 }
-@keyframes radarSpin { to { transform: rotate(360deg); } }
+@keyframes radarSpin { to { transform:rotate(360deg); } }
 
-/* ─── LAYOUT ─── */
+/* ─── APP SHELL ─── */
 #app {
   position:relative; z-index:1;
-  display:grid;
-  grid-template-rows: 48px 1fr 32px;
+  display:flex; flex-direction:column;
   height:100vh;
 }
 
 /* ─── HEADER ─── */
 #hdr {
+  flex-shrink:0; height:48px;
   display:flex; align-items:center; justify-content:space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid rgba(0,212,255,0.2);
-  background: rgba(0,8,18,0.95);
-  backdrop-filter: blur(10px);
+  padding:0 20px;
+  border-bottom:1px solid rgba(0,212,255,0.2);
+  background:rgba(0,8,18,0.97); backdrop-filter:blur(10px);
 }
-.hdr-brand {
-  display:flex; align-items:center; gap:10px;
-}
+.hdr-brand { display:flex; align-items:center; gap:10px; }
 .hdr-logo {
-  font-family: var(--head);
-  font-size: 15px; font-weight: 800;
-  letter-spacing: 4px;
-  color: var(--c);
-  text-shadow: 0 0 20px rgba(0,212,255,0.5);
+  font-family:var(--head); font-size:15px; font-weight:800;
+  letter-spacing:4px; color:var(--c);
+  text-shadow:0 0 20px rgba(0,212,255,0.5);
 }
-.hdr-logo em { color: var(--r); font-style:normal; }
+.hdr-logo em { color:var(--r); font-style:normal; }
 .hdr-badge {
-  font-size: 9px; letter-spacing: 2px;
-  padding: 2px 6px;
-  border: 1px solid rgba(0,212,255,0.3);
-  color: rgba(0,212,255,0.6);
+  font-size:9px; letter-spacing:2px; padding:2px 6px;
+  border:1px solid rgba(0,212,255,0.3); color:rgba(0,212,255,0.6);
 }
-.hdr-center {
-  display:flex; align-items:center; gap:24px;
-}
-.hdr-stat {
-  text-align:center;
-}
-.hdr-stat .val {
-  font-family: var(--head);
-  font-size: 16px; font-weight: 800;
-  display:block;
-}
-.hdr-stat .lbl {
-  font-size: 8px; letter-spacing: 2px;
-  color: rgba(200,230,245,0.4);
-}
-.hdr-right {
-  display:flex; align-items:center; gap:16px;
-  font-size: 10px; color: rgba(200,230,245,0.4);
-}
-.hdr-right .time { color: var(--c); font-weight:700; }
+.hdr-center { display:flex; align-items:center; gap:28px; }
+.hdr-stat { text-align:center; }
+.hdr-stat .val { font-family:var(--head); font-size:16px; font-weight:800; display:block; }
+.hdr-stat .lbl { font-size:8px; letter-spacing:2px; color:rgba(200,230,245,0.4); }
+.hdr-right { display:flex; align-items:center; gap:16px; font-size:10px; color:rgba(200,230,245,0.4); }
+.hdr-right .time { color:var(--c); font-weight:700; }
 .live-dot {
   width:7px; height:7px; border-radius:50%;
-  background: var(--g);
-  box-shadow: 0 0 8px var(--g);
-  animation: blink 1s ease-in-out infinite;
-  display:inline-block;
+  background:var(--g); box-shadow:0 0 8px var(--g);
+  animation:blink 1s ease-in-out infinite; display:inline-block;
 }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
-
-/* ─── MAIN GRID ─── */
-#main {
-  display:grid;
-  grid-template-columns: 220px 1fr 1fr 200px;
-  grid-template-rows: 1fr 1fr;
-  gap: 1px;
-  background: rgba(0,212,255,0.07);
-  overflow:hidden;
-}
-
-/* ─── PANEL BASE ─── */
-.pnl {
-  background: linear-gradient(145deg, rgba(4,21,37,0.97), rgba(2,13,24,0.99));
-  overflow:hidden; position:relative;
-  display:flex; flex-direction:column;
-}
-.pnl::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:1px;
-  background: linear-gradient(90deg,transparent,var(--c),transparent);
-  opacity:0.3;
-}
-.pnl-title {
-  font-family: var(--head);
-  font-size: 8px; letter-spacing: 3px;
-  color: rgba(0,212,255,0.6);
-  padding: 8px 12px 6px;
-  border-bottom: 1px solid rgba(0,212,255,0.07);
-  display:flex; align-items:center; justify-content:space-between;
-  flex-shrink:0;
-}
-.pnl-title .badge2 {
-  font-size:8px; padding:1px 5px;
-  border-radius:2px;
-}
-
-/* ─── PANEL SPANS ─── */
-#p-processes { grid-row: 1 / 3; }
-#p-graph     { grid-column: 2 / 4; grid-row: 1; }
-#p-anomaly   { grid-column: 2; grid-row: 2; }
-#p-latency   { grid-column: 3; grid-row: 2; }
-#p-chain     { grid-row: 1 / 3; }
-
-/* ─── PROCESS LIST ─── */
-.proc-scroll {
-  flex:1; overflow-y:auto;
-  scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
-}
-.proc-item {
-  display:grid;
-  grid-template-columns: 8px 38px 38px 1fr 44px;
-  gap: 6px; align-items:center;
-  padding: 5px 10px;
-  border-bottom: 1px solid rgba(0,212,255,0.04);
-  cursor:pointer; transition: background 0.15s;
-  font-size: 10px;
-}
-.proc-item:hover { background: rgba(0,212,255,0.05); }
-.proc-item.anom { background: rgba(255,45,85,0.06); }
-.proc-item.anom:hover { background: rgba(255,45,85,0.1); }
-.proc-dot {
-  width:7px; height:7px; border-radius:50%;
-  flex-shrink:0;
-}
-.proc-pid { color: rgba(200,230,245,0.45); }
-.proc-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.proc-score { text-align:right; font-weight:700; font-size:10px; }
-.proc-bar-wrap {
-  padding: 0 10px 1px; flex-shrink:0;
-}
-.proc-bar {
-  height:2px; background:rgba(0,212,255,0.07); border-radius:1px; margin-bottom:1px;
-}
-.proc-bar-fill { height:100%; border-radius:1px; }
-
-/* ─── GRAPH CANVAS ─── */
-#p-graph { position:relative; }
-#graph-canvas {
-  width:100%; height:100%;
-  display:block; cursor:crosshair;
-}
-.graph-hud {
-  position:absolute; top:8px; right:10px;
-  display:flex; flex-direction:column; gap:3px; align-items:flex-end;
-}
-.hud-item {
-  font-size:9px; letter-spacing:1px;
-  color: rgba(0,212,255,0.45);
-  background: rgba(0,8,18,0.7);
-  padding: 1px 5px;
-}
-
-/* ─── CHARTS ─── */
-#p-anomaly canvas, #p-latency canvas {
-  flex:1; min-height:0; padding:4px 10px 8px;
-}
-
-/* ─── CHAIN LOG ─── */
-.chain-scroll {
-  flex:0 0 50%; overflow-y:auto; padding:6px;
-  scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
-  border-bottom: 1px solid rgba(0,212,255,0.1);
-}
-
-/* ─── FORENSIC REPORT VIEWER ─── */
-.report-scroll {
-  flex:1; overflow-y:auto; padding:6px;
-  scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
-}
-#report-json {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: rgba(200,230,245,0.6);
-  white-space: pre-wrap;
-  word-break: break-all;
-  line-height: 1.5;
-}
-#report-json .key   { color: var(--c); }
-#report-json .str   { color: var(--c2); }
-#report-json .num   { color: var(--y); }
-#report-json .bool  { color: var(--o); }
-#report-placeholder {
-  color: rgba(200,230,245,0.2);
-  font-size: 10px;
-  text-align: center;
-  padding: 20px 8px;
-  letter-spacing: 1px;
-}
-.block {
-  padding: 7px 8px; margin-bottom:5px;
-  border: 1px solid rgba(0,212,255,0.1);
-  background: rgba(0,6,15,0.6);
-  font-size: 10px;
-  animation: slideIn .35s ease;
-  cursor:pointer; transition:border-color .2s;
-  position:relative; overflow:hidden;
-}
-.block::before {
-  content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
-}
-.block.anom-blk::before { background:var(--r); box-shadow:0 0 6px var(--r); }
-.block.norm-blk::before { background:var(--g); }
-.block:hover { border-color:rgba(0,212,255,0.35); }
-@keyframes slideIn { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:none} }
-.blk-hdr { display:flex; justify-content:space-between; margin-bottom:4px; }
-.blk-num { color:var(--c); font-weight:700; }
-.blk-time { color:rgba(200,230,245,0.3); font-size:9px; }
-.blk-hash { color:rgba(200,230,245,0.25); font-size:9px; margin-bottom:4px; letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.blk-row { display:flex; justify-content:space-between; }
-.blk-pid { color:var(--y); }
-
-/* ─── FOOTER ─── */
-#ftr {
-  display:flex; align-items:center; gap:16px;
-  padding: 0 14px;
-  background: rgba(0,4,10,0.98);
-  border-top: 1px solid rgba(0,212,255,0.15);
-  font-size: 10px;
-}
-.ftr-tag { color:var(--c2); letter-spacing:1px; flex-shrink:0; }
-.ftr-feed { flex:1; color:var(--g); white-space:nowrap; overflow:hidden; }
-.ftr-metrics { display:flex; gap:14px; color:rgba(200,230,245,0.35); flex-shrink:0; }
-.ftr-metrics span { white-space:nowrap; }
-.ftr-metrics .mv { color:var(--c); }
 
 /* ─── ALERT STRIP ─── */
 #alert-strip {
   position:fixed; top:48px; left:0; right:0; z-index:500;
   height:22px; display:flex; align-items:center;
-  background: linear-gradient(90deg, rgba(255,45,85,0.18), rgba(255,45,85,0.04));
-  border-bottom: 1px solid rgba(255,45,85,0.25);
-  overflow:hidden;
-  pointer-events:none;
+  background:linear-gradient(90deg,rgba(255,45,85,0.18),rgba(255,45,85,0.04));
+  border-bottom:1px solid rgba(255,45,85,0.25);
+  overflow:hidden; pointer-events:none;
 }
 .alert-tag {
-  flex-shrink:0;
-  background:var(--r); color:#000; font-weight:700;
-  font-size:9px; letter-spacing:2px;
-  padding: 0 8px; height:100%; display:flex; align-items:center;
-  margin-right:10px;
+  flex-shrink:0; background:var(--r); color:#000; font-weight:700;
+  font-size:9px; letter-spacing:2px; padding:0 8px;
+  height:100%; display:flex; align-items:center; margin-right:10px;
 }
 .alert-text {
   font-size:10px; color:var(--r); white-space:nowrap;
-  animation: ticker 30s linear infinite;
-  letter-spacing:.5px;
+  animation:ticker 30s linear infinite; letter-spacing:.5px;
 }
 @keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+#alert-spacer { flex-shrink:0; height:22px; }
 
-/* scrollbars */
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:2px}
-
-/* ─── ANOMALY FLASH ─── */
-@keyframes flashRed {
-  0%,100%{box-shadow:inset 0 0 0 1px transparent}
-  50%{box-shadow:inset 0 0 0 1px rgba(255,45,85,0.6)}
+/* ─── TAB BAR ─── */
+#tab-bar {
+  flex-shrink:0; height:40px;
+  display:flex; align-items:stretch;
+  background:rgba(0,4,11,0.99);
+  border-bottom:1px solid rgba(0,212,255,0.12);
 }
-.flash { animation: flashRed .4s ease; }
+.tab-btn {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:7px;
+  padding:0; background:transparent; border:none;
+  border-bottom:2px solid transparent; cursor:pointer;
+  font-family:var(--head); font-size:10px; letter-spacing:3px;
+  color:rgba(0,212,255,0.3); transition:all 0.2s ease;
+  position:relative; top:1px; white-space:nowrap;
+}
+.tab-btn:hover { color:rgba(0,212,255,0.65); }
+.tab-btn.active {
+  color:var(--c); border-bottom-color:var(--c);
+  text-shadow:0 0 14px rgba(0,212,255,0.7);
+}
+.tab-num { font-size:8px; opacity:0.55; }
+
+/* ─── TAB CONTENT ─── */
+#tab-content { flex:1; position:relative; overflow:hidden; }
+.tab-pane {
+  position:absolute; inset:0;
+  opacity:0; pointer-events:none;
+  transition:opacity 0.25s ease; overflow:hidden;
+}
+.tab-pane.active { opacity:1; pointer-events:all; }
+
+/* ─── SHARED ─── */
+.sec-title {
+  font-family:var(--head); font-size:9px; letter-spacing:3px;
+  color:rgba(0,212,255,0.5); display:flex; align-items:center; gap:8px;
+}
+.sec-title::before {
+  content:''; display:inline-block; width:14px; height:1px;
+  background:var(--c); opacity:0.5;
+}
+.badge { font-size:8px; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
+::-webkit-scrollbar { width:3px; height:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(0,212,255,0.3); border-radius:2px; }
+* { scrollbar-width:thin; scrollbar-color:rgba(0,212,255,0.3) transparent; }
+
+/* ════════════════════════════════════════════
+   TAB 1 — OVERVIEW
+════════════════════════════════════════════ */
+#tab-overview {
+  display:flex; flex-direction:column;
+  padding:28px 36px; gap:22px; overflow-y:auto;
+}
+.ov-cards {
+  display:grid; grid-template-columns:repeat(5,1fr);
+  gap:16px; flex-shrink:0;
+}
+.ov-card {
+  background:linear-gradient(135deg,rgba(4,21,37,0.96),rgba(2,13,24,0.99));
+  border:1px solid rgba(0,212,255,0.1); padding:26px 22px;
+  position:relative; overflow:hidden; transition:border-color 0.2s;
+}
+.ov-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.ov-card::after {
+  content:''; position:absolute; bottom:-50px; right:-50px;
+  width:120px; height:120px; border-radius:50%; opacity:0.04;
+}
+.ov-card:hover { border-color:rgba(0,212,255,0.28); }
+.oc-lbl { font-size:9px; letter-spacing:3px; color:rgba(200,230,245,0.38); display:block; margin-bottom:10px; }
+.oc-val { font-family:var(--head); font-size:38px; font-weight:800; line-height:1; display:block; margin-bottom:10px; }
+.oc-sub { font-size:9px; color:rgba(200,230,245,0.22); letter-spacing:.5px; }
+.ov-card.c-cyan::before   { background:linear-gradient(90deg,var(--c),transparent); }
+.ov-card.c-red::before    { background:linear-gradient(90deg,var(--r),transparent); }
+.ov-card.c-green::before  { background:linear-gradient(90deg,var(--g),transparent); }
+.ov-card.c-yellow::before { background:linear-gradient(90deg,var(--y),transparent); }
+.ov-card.c-orange::before { background:linear-gradient(90deg,var(--o),transparent); }
+.ov-card.c-cyan::after    { background:var(--c); }
+.ov-card.c-red::after     { background:var(--r); }
+.ov-card.c-green::after   { background:var(--g); }
+.ov-card.c-yellow::after  { background:var(--y); }
+.ov-card.c-orange::after  { background:var(--o); }
+
+.ov-bottom { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; flex:1; min-height:220px; }
+.ov-panel {
+  background:linear-gradient(145deg,rgba(4,21,37,0.96),rgba(2,13,24,0.99));
+  border:1px solid rgba(0,212,255,0.1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.ov-panel-hdr { padding:14px 18px 12px; border-bottom:1px solid rgba(0,212,255,0.07); flex-shrink:0; }
+.ov-panel-body { flex:1; overflow-y:auto; padding:10px 18px; }
+.sys-status-big {
+  font-family:var(--head); font-size:20px; font-weight:800;
+  letter-spacing:4px; text-align:center; padding:18px 0 14px;
+}
+.sys-status-big.ok     { color:var(--g); text-shadow:0 0 18px rgba(57,255,20,0.4); }
+.sys-status-big.threat { color:var(--r); text-shadow:0 0 18px rgba(255,45,85,0.5); }
+.sys-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:7px 0; border-bottom:1px solid rgba(0,212,255,0.05); font-size:11px;
+}
+.sys-row .sk { color:rgba(200,230,245,0.38); font-size:10px; }
+.sys-row .sv { color:var(--c); font-weight:700; }
+.alert-item { padding:9px 0; border-bottom:1px solid rgba(0,212,255,0.05); }
+.alert-item:last-child { border-bottom:none; }
+.ai-time { color:rgba(200,230,245,0.28); font-size:9px; }
+.ai-msg  { font-size:10px; margin-top:3px; line-height:1.45; }
+.model-metric { padding:11px 0; border-bottom:1px solid rgba(0,212,255,0.05); }
+.mm-lbl { font-size:9px; letter-spacing:2px; color:rgba(200,230,245,0.38); margin-bottom:5px; }
+.mm-val { font-family:var(--head); font-size:19px; font-weight:700; }
+.mm-bar-bg { height:3px; background:rgba(0,212,255,0.1); border-radius:2px; margin-top:7px; }
+.mm-bar-fill { height:100%; border-radius:2px; transition:width 0.4s ease; }
+
+/* ════════════════════════════════════════════
+   TAB 2 — PROCESS GRAPH
+════════════════════════════════════════════ */
+#tab-graph { display:grid; grid-template-columns:280px 1fr 260px; height:100%; }
+
+.pg-left {
+  background:linear-gradient(180deg,rgba(4,21,37,0.97),rgba(2,13,24,0.99));
+  border-right:1px solid rgba(0,212,255,0.1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pg-left-hdr { padding:16px 16px 12px; border-bottom:1px solid rgba(0,212,255,0.07); flex-shrink:0; }
+.pg-hint { margin-top:8px; font-size:9px; color:rgba(200,230,245,0.22); letter-spacing:1px; }
+.pg-proc-scroll { flex:1; overflow-y:auto; }
+.pg-proc-item {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 16px; border-bottom:1px solid rgba(0,212,255,0.05);
+  cursor:pointer; transition:background 0.15s; font-size:11px;
+}
+.pg-proc-item:hover         { background:rgba(0,212,255,0.06); }
+.pg-proc-item.pg-anom       { background:rgba(255,45,85,0.06); }
+.pg-proc-item.pg-anom:hover { background:rgba(255,45,85,0.1); }
+.pg-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.pg-info  { flex:1; overflow:hidden; }
+.pg-name  { font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pg-meta  { font-size:9px; color:rgba(200,230,245,0.32); margin-top:2px; }
+.pg-score { font-weight:700; font-size:11px; flex-shrink:0; }
+
+.pg-center { position:relative; overflow:hidden; background:rgba(0,4,10,0.35); }
+#graph-canvas { position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; display:block; }
+.graph-hud { position:absolute; top:16px; left:16px; display:flex; flex-direction:column; gap:4px; }
+.hud-item {
+  font-size:9px; letter-spacing:1px; color:rgba(0,212,255,0.5);
+  background:rgba(0,8,18,0.82); padding:3px 8px; border:1px solid rgba(0,212,255,0.1);
+}
+.graph-legend { position:absolute; bottom:16px; left:16px; display:flex; gap:16px; }
+.gl-item { display:flex; align-items:center; gap:6px; font-size:9px; color:rgba(200,230,245,0.4); }
+.gl-dot  { width:8px; height:8px; border-radius:50%; }
+
+.pg-right {
+  background:linear-gradient(180deg,rgba(4,21,37,0.97),rgba(2,13,24,0.99));
+  border-left:1px solid rgba(0,212,255,0.1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pg-right-hdr { padding:16px 16px 12px; border-bottom:1px solid rgba(0,212,255,0.07); flex-shrink:0; }
+.pg-right-body { flex:1; padding:16px; overflow-y:auto; }
+.nd-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; gap:12px; color:rgba(0,212,255,0.2);
+  text-align:center; font-size:10px; letter-spacing:1px;
+}
+.nd-empty-icon { font-size:36px; opacity:0.25; margin-bottom:4px; }
+.nd-field { padding:13px 0; border-bottom:1px solid rgba(0,212,255,0.06); }
+.nd-field:last-child { border-bottom:none; }
+.nd-lbl { font-size:9px; letter-spacing:2px; color:rgba(200,230,245,0.32); margin-bottom:5px; }
+.nd-val { font-family:var(--head); font-size:16px; font-weight:700; }
+.nd-bar { height:4px; border-radius:2px; margin-top:8px; transition:width 0.3s; }
+
+/* ════════════════════════════════════════════
+   TAB 3 — ANOMALY DETECTION
+════════════════════════════════════════════ */
+#tab-anomaly { display:flex; flex-direction:column; padding:24px 32px; gap:18px; overflow:hidden; }
+
+.ad-chart-section {
+  flex:0 0 44%; display:flex; flex-direction:column;
+  background:linear-gradient(145deg,rgba(4,21,37,0.97),rgba(2,13,24,0.99));
+  border:1px solid rgba(0,212,255,0.1); overflow:hidden;
+}
+.ad-chart-hdr {
+  padding:14px 20px 12px; border-bottom:1px solid rgba(0,212,255,0.07);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.ad-chart-wrap { flex:1; min-height:0; padding:16px 20px; position:relative; }
+
+.ad-table-section {
+  flex:1; min-height:0; display:flex; flex-direction:column;
+  background:linear-gradient(145deg,rgba(4,21,37,0.97),rgba(2,13,24,0.99));
+  border:1px solid rgba(0,212,255,0.1); overflow:hidden;
+}
+.ad-table-hdr {
+  padding:14px 20px 12px; border-bottom:1px solid rgba(0,212,255,0.07);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.ad-table-scroll { flex:1; overflow-y:auto; }
+.ad-table { width:100%; border-collapse:collapse; font-size:11px; }
+.ad-table th {
+  padding:10px 16px; text-align:left; font-size:9px; letter-spacing:2px;
+  color:rgba(0,212,255,0.45); border-bottom:1px solid rgba(0,212,255,0.1);
+  position:sticky; top:0; background:rgba(2,13,24,0.99); font-weight:400;
+}
+.ad-table td { padding:9px 16px; border-bottom:1px solid rgba(0,212,255,0.04); }
+.ad-table tr.row-critical td { background:rgba(255,45,85,0.08); }
+.ad-table tr.row-warning  td { background:rgba(255,214,10,0.05); }
+.ad-table tr.row-normal   td { background:rgba(57,255,20,0.03); }
+.ad-table tr:hover td { filter:brightness(1.4); }
+.status-pill { display:inline-block; padding:2px 8px; border-radius:2px; font-size:9px; letter-spacing:1px; font-weight:700; }
+.pill-critical { background:rgba(255,45,85,0.18);  color:var(--r); border:1px solid rgba(255,45,85,0.35); }
+.pill-warning  { background:rgba(255,214,10,0.14); color:var(--y); border:1px solid rgba(255,214,10,0.3); }
+.pill-normal   { background:rgba(57,255,20,0.1);   color:var(--g); border:1px solid rgba(57,255,20,0.25); }
+
+/* ════════════════════════════════════════════
+   TAB 4 — BLOCKCHAIN
+════════════════════════════════════════════ */
+#tab-blockchain { display:grid; grid-template-columns:310px 1fr; height:100%; overflow:hidden; }
+
+.bc-left {
+  background:linear-gradient(180deg,rgba(4,21,37,0.97),rgba(2,13,24,0.99));
+  border-right:1px solid rgba(0,212,255,0.1);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.bc-net { padding:20px 20px 0; flex-shrink:0; }
+.bc-net-title { margin-bottom:14px; }
+.net-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0; border-bottom:1px solid rgba(0,212,255,0.05); font-size:11px;
+}
+.net-row:last-child { border-bottom:none; }
+.nk { color:rgba(200,230,245,0.38); font-size:10px; }
+.nv { color:var(--c); font-weight:700; }
+.nv.green  { color:var(--g); }
+.nv.purple { color:var(--p); }
+.bc-lat { flex:1; min-height:0; display:flex; flex-direction:column; padding:16px 20px; }
+.bc-lat-title { font-family:var(--head); font-size:9px; letter-spacing:3px; color:rgba(0,212,255,0.45); margin-bottom:12px; flex-shrink:0; }
+.bc-lat-wrap { flex:1; min-height:0; }
+
+.bc-right { display:flex; flex-direction:column; overflow:hidden; }
+.bc-right-hdr {
+  padding:16px 24px 14px; border-bottom:1px solid rgba(0,212,255,0.1); flex-shrink:0;
+  display:flex; align-items:center; justify-content:space-between;
+  background:linear-gradient(90deg,rgba(2,13,24,0.99),rgba(4,21,37,0.97));
+}
+.bc-log-scroll { flex:1; overflow-y:auto; padding:16px 24px; display:flex; flex-direction:column; gap:10px; }
+.bc-block {
+  background:rgba(0,6,15,0.7); border:1px solid rgba(0,212,255,0.1);
+  padding:14px 16px; position:relative; overflow:hidden;
+  transition:border-color .2s; animation:bcSlide .35s ease;
+}
+.bc-block::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; }
+.bc-block.anom-blk::before { background:var(--r); box-shadow:0 0 8px var(--r); }
+.bc-block.norm-blk::before { background:var(--g); }
+.bc-block:hover { border-color:rgba(0,212,255,0.28); }
+@keyframes bcSlide { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+.bc-blk-top  { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.bc-blk-num  { color:var(--c); font-weight:700; font-family:var(--head); font-size:13px; }
+.bc-blk-time { color:rgba(200,230,245,0.32); font-size:10px; }
+.bc-blk-hash { font-size:9px; color:rgba(200,230,245,0.2); letter-spacing:.5px; margin-bottom:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bc-blk-row  { display:flex; justify-content:space-between; align-items:center; font-size:11px; }
+.bc-blk-proc { color:var(--y); }
+.bc-blk-score{ font-weight:700; }
+.bc-blk-tag  { margin-top:6px; font-size:9px; letter-spacing:1px; }
+
+/* ════════════════════════════════════════════
+   TAB 5 — FORENSIC REPORT
+════════════════════════════════════════════ */
+#tab-forensic { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+.fr-topbar {
+  flex-shrink:0;
+  background:linear-gradient(90deg,rgba(2,13,24,0.99),rgba(4,21,37,0.98));
+  border-bottom:1px solid rgba(0,212,255,0.12);
+  padding:14px 32px; display:flex; align-items:center; justify-content:space-between; gap:20px;
+}
+.fr-meta { display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap; }
+.fr-meta-item .fm-lbl { color:rgba(200,230,245,0.32); font-size:8px; letter-spacing:2px; display:block; margin-bottom:3px; }
+.fr-meta-item .fm-val { color:var(--c); font-weight:700; font-size:11px; }
+.fr-actions { display:flex; gap:10px; flex-shrink:0; }
+.fr-btn {
+  background:transparent; border:1px solid rgba(0,212,255,0.3); color:var(--c);
+  font-family:var(--mono); font-size:9px; letter-spacing:2px;
+  padding:7px 18px; cursor:pointer; transition:all 0.2s;
+}
+.fr-btn:hover { background:rgba(0,212,255,0.1); border-color:var(--c); }
+.fr-body { flex:1; overflow-y:auto; padding:30px 40px; }
+.fr-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; gap:14px; color:rgba(0,212,255,0.2); font-size:11px; letter-spacing:1px; text-align:center;
+}
+.fr-empty-icon { font-size:52px; opacity:0.12; margin-bottom:6px; }
+#report-json {
+  font-family:var(--mono); font-size:12px; line-height:1.85;
+  color:rgba(200,230,245,0.6); white-space:pre-wrap; word-break:break-all;
+}
+#report-json .key  { color:var(--c); }
+#report-json .str  { color:var(--c2); }
+#report-json .num  { color:var(--y); }
+#report-json .bool { color:var(--o); }
+
+/* ─── FOOTER ─── */
+#ftr {
+  flex-shrink:0; height:32px;
+  display:flex; align-items:center; gap:16px;
+  padding:0 16px;
+  background:rgba(0,4,10,0.98);
+  border-top:1px solid rgba(0,212,255,0.15);
+  font-size:10px;
+}
+.ftr-tag     { color:var(--c2); letter-spacing:1px; flex-shrink:0; }
+.ftr-feed    { flex:1; color:var(--g); white-space:nowrap; overflow:hidden; }
+.ftr-metrics { display:flex; gap:14px; color:rgba(200,230,245,0.35); flex-shrink:0; }
+.ftr-metrics span { white-space:nowrap; }
+.ftr-metrics .mv  { color:var(--c); }
+
+@keyframes flashRed {
+  0%,100% { box-shadow:inset 0 0 0 1px transparent }
+  50%     { box-shadow:inset 0 0 0 1px rgba(255,45,85,0.6) }
+}
+.flash { animation:flashRed .4s ease; }
 </style>
 </head>
 <body>
@@ -378,74 +484,228 @@ body::before {
   <!-- ALERT STRIP -->
   <div id="alert-strip">
     <div class="alert-tag">⚠ ALERT</div>
-    <div class="alert-text" id="alert-txt">
-      SYSTEM NOMINAL &nbsp;|&nbsp; WAITING FOR DATA FROM CORE ENGINE...
-    </div>
+    <div class="alert-text" id="alert-txt">SYSTEM NOMINAL &nbsp;|&nbsp; WAITING FOR DATA FROM CORE ENGINE...</div>
+  </div>
+  <div id="alert-spacer"></div>
+
+  <!-- TAB BAR -->
+  <div id="tab-bar">
+    <button class="tab-btn active" data-tab="overview">  <span class="tab-num">01</span> OVERVIEW          </button>
+    <button class="tab-btn"        data-tab="graph">     <span class="tab-num">02</span> PROCESS GRAPH     </button>
+    <button class="tab-btn"        data-tab="anomaly">   <span class="tab-num">03</span> ANOMALY DETECTION </button>
+    <button class="tab-btn"        data-tab="blockchain"><span class="tab-num">04</span> BLOCKCHAIN        </button>
+    <button class="tab-btn"        data-tab="forensic">  <span class="tab-num">05</span> FORENSIC REPORT   </button>
   </div>
 
-  <!-- MAIN -->
-  <div id="main" style="margin-top:22px; height:calc(100% - 22px);">
+  <!-- TAB CONTENT -->
+  <div id="tab-content">
 
-    <!-- LEFT: PROCESS LIST -->
-    <div class="pnl" id="p-processes">
-      <div class="pnl-title">
-        PROCESS NODES
-        <span class="badge2" id="proc-anom-badge" style="background:rgba(255,45,85,0.15);color:var(--r)">0 ANOM</span>
+    <!-- ══ TAB 1: OVERVIEW ══ -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="ov-cards">
+        <div class="ov-card c-cyan">
+          <span class="oc-lbl">PROCESSES</span>
+          <span class="oc-val" id="ov-procs" style="color:var(--c)">0</span>
+          <span class="oc-sub">Active system processes</span>
+        </div>
+        <div class="ov-card c-red">
+          <span class="oc-lbl">ANOMALIES</span>
+          <span class="oc-val" id="ov-anom" style="color:var(--r)">0</span>
+          <span class="oc-sub">Score above 0.75 threshold</span>
+        </div>
+        <div class="ov-card c-green">
+          <span class="oc-lbl">TX COMMITTED</span>
+          <span class="oc-val" id="ov-commits" style="color:var(--g)">0</span>
+          <span class="oc-sub">Fabric blockchain transactions</span>
+        </div>
+        <div class="ov-card c-yellow">
+          <span class="oc-lbl">GNN ACCURACY</span>
+          <span class="oc-val" style="color:var(--y)">96.4%</span>
+          <span class="oc-sub">Graph autoencoder precision</span>
+        </div>
+        <div class="ov-card c-orange">
+          <span class="oc-lbl">HLF LATENCY</span>
+          <span class="oc-val" id="ov-lat" style="color:var(--o)">142ms</span>
+          <span class="oc-sub">Fabric commit latency</span>
+        </div>
       </div>
-      <div class="proc-scroll" id="proc-list"></div>
+
+      <div class="ov-bottom">
+        <div class="ov-panel">
+          <div class="ov-panel-hdr"><div class="sec-title">SYSTEM STATUS</div></div>
+          <div class="ov-panel-body">
+            <div id="ov-status-big" class="sys-status-big ok">OPERATIONAL</div>
+            <div class="sys-row"><span class="sk">GNN MODEL</span><span class="sv">AUTOENCODER v2</span></div>
+            <div class="sys-row"><span class="sk">DETECTION THRESHOLD</span><span class="sv" style="color:var(--r)">0.75</span></div>
+            <div class="sys-row"><span class="sk">GRAPH NODES</span><span class="sv" id="ov-nodes">0</span></div>
+            <div class="sys-row"><span class="sk">GRAPH EDGES</span><span class="sv" id="ov-edges">0</span></div>
+            <div class="sys-row"><span class="sk">GNN LOSS</span><span class="sv" id="ov-loss">0.0000</span></div>
+            <div class="sys-row"><span class="sk">CHANNEL</span><span class="sv">cytriage-ch1</span></div>
+            <div class="sys-row"><span class="sk">ORDERER</span><span class="sv">RAFT</span></div>
+            <div class="sys-row"><span class="sk">PEERS ONLINE</span><span class="sv" style="color:var(--g)">4 / 4</span></div>
+          </div>
+        </div>
+
+        <div class="ov-panel">
+          <div class="ov-panel-hdr"><div class="sec-title">RECENT ALERTS</div></div>
+          <div class="ov-panel-body" id="ov-alerts-list">
+            <div style="color:rgba(200,230,245,0.2);font-size:10px;padding:24px 0;text-align:center;letter-spacing:1px">No alerts yet...</div>
+          </div>
+        </div>
+
+        <div class="ov-panel">
+          <div class="ov-panel-hdr"><div class="sec-title">GNN MODEL METRICS</div></div>
+          <div class="ov-panel-body">
+            <div class="model-metric">
+              <div class="mm-lbl">ACCURACY</div>
+              <div class="mm-val" style="color:var(--y)">96.4%</div>
+              <div class="mm-bar-bg"><div class="mm-bar-fill" style="width:96.4%;background:var(--y)"></div></div>
+            </div>
+            <div class="model-metric">
+              <div class="mm-lbl">RECONSTRUCTION LOSS</div>
+              <div class="mm-val" id="ov-mm-loss" style="color:var(--o)">0.0000</div>
+              <div class="mm-bar-bg"><div class="mm-bar-fill" id="ov-loss-bar" style="width:0%;background:var(--o)"></div></div>
+            </div>
+            <div class="model-metric">
+              <div class="mm-lbl">ANOMALY RATIO</div>
+              <div class="mm-val" id="ov-mm-ratio" style="color:var(--r)">0.0%</div>
+              <div class="mm-bar-bg"><div class="mm-bar-fill" id="ov-ratio-bar" style="width:0%;background:var(--r)"></div></div>
+            </div>
+            <div class="model-metric">
+              <div class="mm-lbl">DETECTION THRESHOLD</div>
+              <div class="mm-val" style="color:var(--c)">0.75</div>
+              <div class="mm-bar-bg"><div class="mm-bar-fill" style="width:75%;background:var(--c)"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- CENTER: GRAPH -->
-    <div class="pnl" id="p-graph">
-      <div class="pnl-title">
-        PROCESS DAG — GNN GRAPH RECONSTRUCTION
-        <span class="badge2" style="background:rgba(0,212,255,0.1);color:var(--c)">LIVE</span>
+    <!-- ══ TAB 2: PROCESS GRAPH ══ -->
+    <div class="tab-pane" id="tab-graph">
+      <div class="pg-left">
+        <div class="pg-left-hdr">
+          <div class="sec-title">
+            PROCESS NODES
+            <span class="badge" id="pg-anom-badge" style="background:rgba(255,45,85,0.15);color:var(--r);margin-left:auto">0 ANOM</span>
+          </div>
+          <div class="pg-hint">CLICK ROW OR NODE TO INSPECT</div>
+        </div>
+        <div class="pg-proc-scroll" id="pg-proc-list"></div>
       </div>
-      <canvas id="graph-canvas"></canvas>
-      <div class="graph-hud">
-        <div class="hud-item">NODES: <span id="hud-n">0</span></div>
-        <div class="hud-item">EDGES: <span id="hud-e">0</span></div>
-        <div class="hud-item">LOSS: <span id="hud-l">0.0000</span></div>
-        <div class="hud-item">THRESHOLD: 0.75</div>
+
+      <div class="pg-center">
+        <canvas id="graph-canvas"></canvas>
+        <div class="graph-hud">
+          <div class="hud-item">NODES: <span id="hud-n">0</span></div>
+          <div class="hud-item">EDGES: <span id="hud-e">0</span></div>
+          <div class="hud-item">LOSS:  <span id="hud-l">0.0000</span></div>
+          <div class="hud-item" style="color:rgba(255,45,85,0.7)">THR: 0.75</div>
+        </div>
+        <div class="graph-legend">
+          <div class="gl-item"><div class="gl-dot" style="background:var(--g);box-shadow:0 0 5px var(--g)"></div>NORMAL</div>
+          <div class="gl-item"><div class="gl-dot" style="background:var(--y);box-shadow:0 0 5px var(--y)"></div>WARNING</div>
+          <div class="gl-item"><div class="gl-dot" style="background:var(--r);box-shadow:0 0 5px var(--r)"></div>ANOMALOUS</div>
+        </div>
+      </div>
+
+      <div class="pg-right">
+        <div class="pg-right-hdr"><div class="sec-title">NODE DETAIL</div></div>
+        <div class="pg-right-body" id="pg-node-detail">
+          <div class="nd-empty">
+            <div class="nd-empty-icon">⬡</div>
+            <div>CLICK A NODE</div>
+            <div>TO INSPECT</div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- ANOMALY SCORE CHART -->
-    <div class="pnl" id="p-anomaly">
-      <div class="pnl-title">
-        ANOMALY SCORE TIMELINE
-        <span class="badge2" style="background:rgba(255,107,0,0.15);color:var(--o)">ROLLING 60s</span>
+    <!-- ══ TAB 3: ANOMALY DETECTION ══ -->
+    <div class="tab-pane" id="tab-anomaly">
+      <div class="ad-chart-section">
+        <div class="ad-chart-hdr">
+          <div class="sec-title">ANOMALY SCORE TIMELINE</div>
+          <div style="display:flex;gap:10px">
+            <span class="badge" style="background:rgba(255,45,85,0.12);color:var(--r)">THRESHOLD 0.75</span>
+            <span class="badge" style="background:rgba(255,107,0,0.12);color:var(--o)">ROLLING 60s</span>
+          </div>
+        </div>
+        <div class="ad-chart-wrap"><canvas id="anom-chart"></canvas></div>
       </div>
-      <canvas id="anom-chart"></canvas>
+      <div class="ad-table-section">
+        <div class="ad-table-hdr">
+          <div class="sec-title">DETECTED EVENTS</div>
+          <span class="badge" id="ad-count-badge" style="background:rgba(0,212,255,0.1);color:var(--c)">0 EVENTS</span>
+        </div>
+        <div class="ad-table-scroll">
+          <table class="ad-table">
+            <thead>
+              <tr><th>TIMESTAMP</th><th>PID</th><th>PROCESS</th><th>SCORE</th><th>STATUS</th></tr>
+            </thead>
+            <tbody id="anom-table-body">
+              <tr><td colspan="5" style="text-align:center;color:rgba(200,230,245,0.2);padding:24px;letter-spacing:1px">Waiting for detections...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- LATENCY CHART -->
-    <div class="pnl" id="p-latency">
-      <div class="pnl-title">
-        FABRIC TX LATENCY (ms)
-        <span class="badge2" style="background:rgba(57,255,20,0.12);color:var(--g)">SLA &lt;500ms</span>
+    <!-- ══ TAB 4: BLOCKCHAIN ══ -->
+    <div class="tab-pane" id="tab-blockchain">
+      <div class="bc-left">
+        <div class="bc-net">
+          <div class="sec-title bc-net-title">NETWORK STATUS</div>
+          <div class="net-row"><span class="nk">PEERS ONLINE</span><span class="nv green">4 / 4</span></div>
+          <div class="net-row"><span class="nk">ORDERER TYPE</span><span class="nv purple">RAFT</span></div>
+          <div class="net-row"><span class="nk">CHANNEL</span><span class="nv">cytriage-ch1</span></div>
+          <div class="net-row"><span class="nk">ENDORSEMENT</span><span class="nv">AND POLICY</span></div>
+          <div class="net-row"><span class="nk">MSP</span><span class="nv">Org1MSP</span></div>
+          <div class="net-row"><span class="nk">CHAINCODE</span><span class="nv">triage_cc</span></div>
+          <div class="net-row"><span class="nk">TX COMMITTED</span><span class="nv" id="bc-commits">0</span></div>
+          <div class="net-row"><span class="nk">SLA TARGET</span><span class="nv" style="color:var(--g)">&lt; 500ms</span></div>
+        </div>
+        <div class="bc-lat">
+          <div class="bc-lat-title">FABRIC TX LATENCY (ms)</div>
+          <div class="bc-lat-wrap"><canvas id="lat-chart"></canvas></div>
+        </div>
       </div>
-      <canvas id="lat-chart"></canvas>
+      <div class="bc-right">
+        <div class="bc-right-hdr">
+          <div class="sec-title">HYPERLEDGER FABRIC LEDGER</div>
+          <span class="badge" style="background:rgba(191,90,242,0.15);color:var(--p)">IMMUTABLE</span>
+        </div>
+        <div class="bc-log-scroll" id="chain-log">
+          <div id="bc-placeholder" style="color:rgba(200,230,245,0.15);font-size:10px;text-align:center;padding:32px;letter-spacing:1px">Awaiting blockchain transactions...</div>
+        </div>
+      </div>
     </div>
 
-    <!-- RIGHT: CHAIN LOG + FORENSIC REPORT -->
-    <div class="pnl" id="p-chain">
-      <div class="pnl-title">
-        HYPERLEDGER FABRIC
-        <span class="badge2" style="background:rgba(191,90,242,0.15);color:var(--p)">IMMUTABLE</span>
+    <!-- ══ TAB 5: FORENSIC REPORT ══ -->
+    <div class="tab-pane" id="tab-forensic">
+      <div class="fr-topbar">
+        <div class="fr-meta">
+          <div class="fr-meta-item"><span class="fm-lbl">REPORT ID</span><span class="fm-val" id="fr-id">—</span></div>
+          <div class="fr-meta-item"><span class="fm-lbl">TIMESTAMP</span><span class="fm-val" id="fr-ts">—</span></div>
+          <div class="fr-meta-item"><span class="fm-lbl">PID</span><span class="fm-val" id="fr-pid">—</span></div>
+          <div class="fr-meta-item"><span class="fm-lbl">SHA-256</span><span class="fm-val" id="fr-hash" style="font-size:9px">—</span></div>
+          <div class="fr-meta-item"><span class="fm-lbl">STATUS</span><span class="fm-val" id="fr-status" style="color:rgba(200,230,245,0.3)">AWAITING DATA</span></div>
+        </div>
+        <div class="fr-actions">
+          <button class="fr-btn" id="copy-btn">COPY TO CLIPBOARD</button>
+        </div>
       </div>
-      <div class="chain-scroll" id="chain-log"></div>
-      <div class="pnl-title" style="border-top:1px solid rgba(0,212,255,0.1)">
-        FORENSIC REPORT
-        <span class="badge2" id="report-badge" style="background:rgba(255,45,85,0.1);color:var(--r)">LATEST</span>
-      </div>
-      <div class="report-scroll">
-        <div id="report-placeholder">NO ANOMALY DETECTED YET</div>
+      <div class="fr-body">
+        <div class="fr-empty" id="fr-empty">
+          <div class="fr-empty-icon">🔬</div>
+          <div>NO FORENSIC REPORT YET</div>
+          <div style="font-size:9px;margin-top:6px;color:rgba(0,212,255,0.15)">Generated when anomaly score exceeds 0.75</div>
+        </div>
         <pre id="report-json" style="display:none"></pre>
       </div>
     </div>
 
-  </div>
+  </div><!-- #tab-content -->
 
   <!-- FOOTER -->
   <div id="ftr">
@@ -453,271 +713,450 @@ body::before {
     <div class="ftr-feed" id="ftr-feed">Initializing GNN Autoencoder...</div>
     <div class="ftr-metrics">
       <span>GRAPH: <span class="mv" id="fm-g">0N·0E</span></span>
-      <span>LOSS: <span class="mv" id="fm-l">0.0000</span></span>
+      <span>LOSS:  <span class="mv" id="fm-l">0.0000</span></span>
       <span>CHANNEL: <span class="mv">cytriage-ch1</span></span>
       <span>ORDERER: <span class="mv">RAFT</span></span>
     </div>
   </div>
 
-</div>
+</div><!-- #app -->
 
 <script>
-// ════════════════════════════════════════════════
-// WEBSOCKET INTEGRATION
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p =>
+    p.classList.toggle('active', p.id === 'tab-' + name));
+}
+document.querySelectorAll('.tab-btn').forEach(btn =>
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
 const ws = new WebSocket(`ws://${window.location.host}/ws`);
-let procs = [];
-let blkNum = 1200;
+let procs          = [];
+let blkNum         = 1200;
+let currentReport  = null;
+let recentAlerts   = [];
+let anomalyRecords = [];
+let nodePositions  = {};
+let animFrame      = 0;
 
 function scoreColor(s) {
   if (s > 0.75) return '#ff2d55';
   if (s > 0.40) return '#ffd60a';
   return '#39ff14';
 }
+function scoreLabel(s) {
+  if (s > 0.75) return 'CRITICAL';
+  if (s > 0.40) return 'WARNING';
+  return 'NORMAL';
+}
+function scorePillClass(s) {
+  if (s > 0.75) return 'pill-critical';
+  if (s > 0.40) return 'pill-warning';
+  return 'pill-normal';
+}
+function scoreRowClass(s) {
+  if (s > 0.75) return 'row-critical';
+  if (s > 0.40) return 'row-warning';
+  return 'row-normal';
+}
 
+// ═══════════════════════════════════════════
+// WEBSOCKET
+// ═══════════════════════════════════════════
 ws.onmessage = (event) => {
   const msg = JSON.parse(event.data);
 
   if (msg.type === 'telemetry') {
-    procs = msg.data.map(p => ({
-      pid:   p.pid,
-      ppid:  p.ppid,
-      name:  p.name,
-      score: p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100,
-      a:     (p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100) > 0.75
-    }));
-    updateUI();
+    procs = msg.data.map(p => {
+      const score = p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100;
+      return { pid:p.pid, ppid:p.ppid, name:p.name, score, a: score > 0.75 };
+    });
 
-    // ── Header live metrics ──────────────────────────────────
-    if (msg.tx_count !== undefined)
-      document.getElementById('h-commits').textContent = msg.tx_count;
-    if (msg.latency_ms !== undefined)
-      document.getElementById('h-lat').textContent = msg.latency_ms + 'ms';
-
-    // ── Graph HUD ───────────────────────────────────────────
-    if (msg.edge_count !== undefined)
-      document.getElementById('hud-e').textContent = msg.edge_count;
-    if (msg.loss !== undefined) {
-      document.getElementById('hud-l').textContent  = msg.loss.toFixed(4);
-      document.getElementById('fm-l').textContent   = msg.loss.toFixed(4);
+    if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
+    if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
+    if (msg.edge_count !== undefined) {
+      document.getElementById('hud-e').textContent    = msg.edge_count;
+      document.getElementById('fm-g').textContent     = `${procs.length}N·${msg.edge_count}E`;
+      document.getElementById('ov-edges').textContent = msg.edge_count;
     }
-
-    // ── Footer graph metric ──────────────────────────────────
-    if (msg.edge_count !== undefined)
-      document.getElementById('fm-g').textContent =
-        `${procs.length}N·${msg.edge_count}E`;
-
-    // ── Footer feed (normal cycle status) ───────────────────
+    if (msg.loss !== undefined) {
+      document.getElementById('hud-l').textContent       = msg.loss.toFixed(4);
+      document.getElementById('fm-l').textContent        = msg.loss.toFixed(4);
+      document.getElementById('ov-loss').textContent     = msg.loss.toFixed(4);
+      document.getElementById('ov-mm-loss').textContent  = msg.loss.toFixed(4);
+      document.getElementById('ov-loss-bar').style.width = Math.min(msg.loss * 100, 100) + '%';
+    }
     if (msg.feed_msg)
       document.getElementById('ftr-feed').textContent = '> ' + msg.feed_msg;
 
-    // ── Anomaly chart ────────────────────────────────────────
     const aScore = msg.anomaly_score ?? 0;
     anomChart.data.datasets[0].data.push(aScore);
     anomChart.data.datasets[0].data.shift();
     anomChart.data.datasets[0].borderColor =
       aScore > 0.75 ? '#ff2d55' : aScore > 0.40 ? '#ffd60a' : '#39ff14';
+    anomChart.data.datasets[0].backgroundColor =
+      aScore > 0.75 ? 'rgba(255,45,85,0.07)' : aScore > 0.40 ? 'rgba(255,214,10,0.06)' : 'rgba(57,255,20,0.06)';
     anomChart.update('none');
 
-    // ── Latency chart ────────────────────────────────────────
     const lat = msg.latency_ms ?? 0;
     latChart.data.datasets[0].data.push(lat);
     latChart.data.datasets[0].data.shift();
     latChart.data.datasets[0].backgroundColor = lat < 500 ? '#39ff14' : '#ff2d55';
     latChart.update('none');
 
+    updateUI();
+
   } else if (msg.type === 'alert') {
     addBlock(msg);
-    if (msg.is_critical) updateAlertStrip(msg.msg);  // only real attacks, not system processes
+    addAnomalyRecord(msg);
+    if (msg.is_critical) { updateAlertStrip(msg.msg); addRecentAlert(msg); }
     logFeed(msg.msg);
-    if (msg.tx_count !== undefined)
-      document.getElementById('h-commits').textContent = msg.tx_count;
-    if (msg.latency_ms !== undefined)
-      document.getElementById('h-lat').textContent = msg.latency_ms + 'ms';
+    if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
+    if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
     if (msg.report) showReport(msg.report, msg);
   }
 };
 
-function updateUI() {
-  buildProcList();
-  drawGraph();
-  updateStats();
+function syncCommits(v) {
+  ['h-commits','ov-commits','bc-commits'].forEach(id =>
+    document.getElementById(id).textContent = v);
+}
+function syncLatency(v) {
+  document.getElementById('h-lat').textContent  = v + 'ms';
+  document.getElementById('ov-lat').textContent = v + 'ms';
 }
 
+// ═══════════════════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════════════════
+function updateUI() { updateStats(); buildProcList(); }
+
 function updateStats() {
-  document.getElementById('h-procs').textContent = procs.length;
+  const n     = procs.length;
   const anoms = procs.filter(p => p.score > 0.75).length;
-  document.getElementById('h-anom').textContent = anoms;
-  document.getElementById('proc-anom-badge').textContent = `${anoms} ANOM`;
-  document.getElementById('hud-n').textContent = procs.length;
-  // hud-e, fm-g, fm-l are updated directly from the telemetry message
-  // which carries edge_count and loss from the backend
+  const ratio = n > 0 ? (anoms / n * 100) : 0;
+
+  ['h-procs','ov-procs'].forEach(id => document.getElementById(id).textContent = n);
+  ['h-anom','ov-anom'].forEach(id => document.getElementById(id).textContent = anoms);
+  document.getElementById('pg-anom-badge').textContent   = `${anoms} ANOM`;
+  document.getElementById('hud-n').textContent           = n;
+  document.getElementById('ov-nodes').textContent        = n;
+  document.getElementById('ov-mm-ratio').textContent     = ratio.toFixed(1) + '%';
+  document.getElementById('ov-ratio-bar').style.width    = ratio + '%';
+
+  const s = document.getElementById('ov-status-big');
+  if (anoms > 0) { s.textContent = 'THREAT DETECTED'; s.className = 'sys-status-big threat'; }
+  else           { s.textContent = 'OPERATIONAL';     s.className = 'sys-status-big ok'; }
 }
 
 function updateAlertStrip(msg) {
   const el = document.getElementById('alert-txt');
-  el.textContent = msg + " | " + el.textContent;
+  el.textContent = msg + ' | ' + el.textContent;
+}
+function logFeed(msg) { document.getElementById('ftr-feed').textContent = '> ' + msg; }
+
+function addRecentAlert(msg) {
+  const ts = new Date().toTimeString().slice(0,8);
+  recentAlerts.unshift({ ts, text: msg.msg, pid: msg.pid, score: msg.score || 0 });
+  if (recentAlerts.length > 8) recentAlerts.pop();
+  document.getElementById('ov-alerts-list').innerHTML = recentAlerts.map(a => `
+    <div class="alert-item">
+      <div class="ai-time">${a.ts} · PID ${a.pid}</div>
+      <div class="ai-msg" style="color:${a.score > 0.75 ? 'var(--r)' : 'var(--y)'}">${a.text}</div>
+    </div>`).join('');
 }
 
-function logFeed(msg) {
-  document.getElementById('ftr-feed').textContent = '> ' + msg;
-}
-
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // CLOCK
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 let epoch = 0;
-function tick() {
-  document.getElementById('h-time').textContent = new Date().toTimeString().slice(0,8);
-}
-setInterval(tick,1000); tick();
+function tick() { document.getElementById('h-time').textContent = new Date().toTimeString().slice(0,8); }
+setInterval(tick, 1000); tick();
 setInterval(() => { epoch++; document.getElementById('h-epoch').textContent = epoch; }, 10000);
 
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // PROCESS LIST
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function buildProcList() {
-  const el = document.getElementById('proc-list');
+  const el = document.getElementById('pg-proc-list');
   el.innerHTML = procs.map(p => {
     const col = scoreColor(p.score);
-    const cls = p.a ? 'anom' : '';
-    return `
-    <div class="proc-item ${cls}">
-      <span class="proc-dot" style="background:${col};box-shadow:0 0 5px ${col}"></span>
-      <span class="proc-pid">${p.pid}</span>
-      <span class="proc-pid">${p.ppid}</span>
-      <span class="proc-name" title="${p.name}">${p.name}</span>
-      <span class="proc-score" style="color:${col}">${p.score.toFixed(2)}</span>
-    </div>
-    <div class="proc-bar-wrap">
-      <div class="proc-bar"><div class="proc-bar-fill" style="width:${p.score*100}%;background:${col};opacity:.7"></div></div>
+    return `<div class="pg-proc-item ${p.a ? 'pg-anom' : ''}" data-pid="${p.pid}">
+      <div class="pg-dot" style="background:${col};box-shadow:0 0 6px ${col}"></div>
+      <div class="pg-info">
+        <div class="pg-name">${p.name}</div>
+        <div class="pg-meta">PID ${p.pid} · PPID ${p.ppid}</div>
+      </div>
+      <div class="pg-score" style="color:${col}">${p.score.toFixed(2)}</div>
     </div>`;
   }).join('');
+  el.querySelectorAll('.pg-proc-item').forEach(item =>
+    item.addEventListener('click', () => {
+      const proc = procs.find(p => p.pid === parseInt(item.dataset.pid));
+      if (proc) showNodeDetail(proc);
+    }));
 }
 
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+// NODE DETAIL
+// ═══════════════════════════════════════════
+function showNodeDetail(proc) {
+  const col = scoreColor(proc.score);
+  document.getElementById('pg-node-detail').innerHTML = `
+    <div class="nd-field">
+      <div class="nd-lbl">PROCESS NAME</div>
+      <div class="nd-val" style="color:var(--c2)">${proc.name}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">PID</div>
+      <div class="nd-val" style="color:var(--y)">${proc.pid}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">PARENT PID</div>
+      <div class="nd-val" style="color:var(--c)">${proc.ppid}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">ANOMALY SCORE</div>
+      <div class="nd-val" style="color:${col}">${proc.score.toFixed(4)}</div>
+      <div class="nd-bar" style="background:${col};width:${proc.score*100}%;opacity:.7"></div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">STATUS</div>
+      <div class="nd-val" style="color:${col}">${scoreLabel(proc.score)}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">THRESHOLD</div>
+      <div class="nd-val" style="color:rgba(200,230,245,0.45)">0.75</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
 // GRAPH CANVAS
-// ════════════════════════════════════════════════
-const gc = document.getElementById('graph-canvas');
+// ═══════════════════════════════════════════
+const gc   = document.getElementById('graph-canvas');
 const gctx = gc.getContext('2d');
-let animFrame = 0;
 
 function drawGraph() {
   const rect = gc.parentElement.getBoundingClientRect();
-  gc.width = rect.width;
-  gc.height = rect.height - 32;
-  const W = gc.width, H = gc.height;
-  const ctx = gctx;
+  if (!rect.width || !rect.height) return;
+  gc.width = rect.width; gc.height = rect.height;
+  const W = gc.width, H = gc.height, ctx = gctx;
   ctx.clearRect(0, 0, W, H);
   animFrame++;
 
-  if (procs.length === 0) return;
+  if (procs.length === 0) {
+    ctx.fillStyle = 'rgba(0,212,255,0.12)';
+    ctx.font = '11px JetBrains Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText('AWAITING PROCESS DATA...', W/2, H/2);
+    return;
+  }
 
-  const pos = {};
+  nodePositions = {};
+  const cx = W/2, cy = H/2, rx = W*0.34, ry = H*0.34;
   procs.forEach((p, i) => {
-    pos[p.pid] = {
-      x: (W / (procs.length + 1)) * (i + 1),
-      y: H / 2 + Math.sin(animFrame * 0.02 + i) * (H / 4)
+    const angle  = (i / procs.length) * Math.PI * 2 - Math.PI / 2;
+    const wobble = Math.sin(animFrame * 0.018 + i * 0.8) * 10;
+    nodePositions[p.pid] = {
+      x: cx + Math.cos(angle) * (rx + wobble),
+      y: cy + Math.sin(angle) * (ry + wobble)
     };
   });
 
-  // Draw edges
   procs.forEach(p => {
-    if (!pos[p.pid] || !pos[p.ppid]) return;
-    const f = pos[p.ppid], t = pos[p.pid];
-    ctx.beginPath();
-    ctx.moveTo(f.x, f.y);
-    ctx.lineTo(t.x, t.y);
-    ctx.strokeStyle = p.a ? '#ff2d55' : 'rgba(0,212,255,0.3)';
+    if (!nodePositions[p.pid] || !nodePositions[p.ppid]) return;
+    const f = nodePositions[p.ppid], t = nodePositions[p.pid];
+    ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(t.x, t.y);
+    ctx.strokeStyle = p.a ? 'rgba(255,45,85,0.45)' : 'rgba(0,212,255,0.18)';
+    ctx.lineWidth   = p.a ? 1.5 : 1;
     ctx.stroke();
   });
 
-  // Draw nodes
+  ctx.font = '9px JetBrains Mono'; ctx.textAlign = 'center';
   procs.forEach(p => {
-    const pt = pos[p.pid];
-    const col = p.a ? '#ff2d55' : '#00d4ff';
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 6, 0, Math.PI*2);
-    ctx.fillStyle = col;
-    ctx.fill();
-    ctx.fillText(p.name, pt.x, pt.y + 15);
+    const pt = nodePositions[p.pid]; if (!pt) return;
+    const col = scoreColor(p.score), r = p.a ? 10 : 6;
+    ctx.shadowBlur = p.a ? 18 : 8; ctx.shadowColor = col;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI*2);
+    ctx.fillStyle = col; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(200,230,245,0.5)';
+    ctx.fillText(p.name.slice(0,11), pt.x, pt.y + r + 12);
   });
 }
 setInterval(drawGraph, 50);
 
-// ════════════════════════════════════════════════
-// CHARTS (Simplified initialization)
-// ════════════════════════════════════════════════
-const anomCtx = document.getElementById('anom-chart').getContext('2d');
-const anomChart = new Chart(anomCtx, {
+gc.addEventListener('click', e => {
+  const rect = gc.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let closest = null, minDist = 26;
+  Object.entries(nodePositions).forEach(([pid, pos]) => {
+    const d = Math.hypot(pos.x - mx, pos.y - my);
+    if (d < minDist) { minDist = d; closest = parseInt(pid); }
+  });
+  if (closest !== null) {
+    const proc = procs.find(p => p.pid === closest);
+    if (proc) showNodeDetail(proc);
+  }
+});
+
+// ═══════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════
+const anomChart = new Chart(document.getElementById('anom-chart').getContext('2d'), {
   type: 'line',
-  data: { labels: Array(60).fill(''), datasets: [{ data: Array(60).fill(0), borderColor: '#ff2d55', fill: true }] },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{min:0,max:1}} }
+  data: {
+    labels: Array(60).fill(''),
+    datasets: [
+      { data:Array(60).fill(0), borderColor:'#39ff14', backgroundColor:'rgba(57,255,20,0.06)',
+        fill:true, tension:0.4, borderWidth:2, pointRadius:0 },
+      { data:Array(60).fill(0.75), borderColor:'rgba(255,45,85,0.55)',
+        borderWidth:1.5, borderDash:[6,4], fill:false, pointRadius:0, tension:0 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ display:false },
+      y:{ min:0, max:1,
+        grid:{ color:'rgba(0,212,255,0.07)' },
+        ticks:{ color:'rgba(0,212,255,0.45)', font:{ family:'JetBrains Mono', size:10 }, stepSize:0.25 },
+        border:{ color:'rgba(0,212,255,0.12)' }
+      }
+    }
+  }
 });
 
-const latCtx = document.getElementById('lat-chart').getContext('2d');
-const latChart = new Chart(latCtx, {
+const latChart = new Chart(document.getElementById('lat-chart').getContext('2d'), {
   type: 'bar',
-  data: { labels: Array(60).fill(''), datasets: [{ data: Array(60).fill(0), backgroundColor: '#39ff14' }] },
-  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{min:0,max:500}} }
+  data: {
+    labels: Array(60).fill(''),
+    datasets:[{ data:Array(60).fill(0), backgroundColor:'#39ff14', borderRadius:2, borderSkipped:false }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ display:false },
+      y:{ min:0, max:500,
+        grid:{ color:'rgba(0,212,255,0.07)' },
+        ticks:{ color:'rgba(0,212,255,0.45)', font:{ family:'JetBrains Mono', size:10 } },
+        border:{ color:'rgba(0,212,255,0.12)' }
+      }
+    }
+  }
 });
 
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+// ANOMALY TABLE
+// ═══════════════════════════════════════════
+function addAnomalyRecord(msg) {
+  const ts = new Date().toTimeString().slice(0,8);
+  anomalyRecords.unshift({ ts, pid:msg.pid, process:msg.process||'unknown', score:msg.score||0 });
+  if (anomalyRecords.length > 100) anomalyRecords.pop();
+  rebuildAnomalyTable();
+}
+function rebuildAnomalyTable() {
+  document.getElementById('ad-count-badge').textContent = `${anomalyRecords.length} EVENTS`;
+  const body = document.getElementById('anom-table-body');
+  if (!anomalyRecords.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:rgba(200,230,245,0.2);padding:24px">Waiting for detections...</td></tr>';
+    return;
+  }
+  body.innerHTML = anomalyRecords.map(r => {
+    const col = scoreColor(r.score);
+    return `<tr class="${scoreRowClass(r.score)}">
+      <td style="color:rgba(200,230,245,0.42)">${r.ts}</td>
+      <td style="color:var(--y)">${r.pid}</td>
+      <td>${r.process}</td>
+      <td style="color:${col};font-weight:700">${r.score.toFixed(4)}</td>
+      <td><span class="status-pill ${scorePillClass(r.score)}">${scoreLabel(r.score)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
 // BLOCKCHAIN LOG
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function addBlock(msg) {
   blkNum++;
   const log = document.getElementById('chain-log');
-  const div = document.createElement('div');
-  div.className = `block ${msg.is_critical ? 'anom-blk' : 'norm-blk'}`;
-  const ts = new Date().toTimeString().slice(0,8);
-  const score = msg.score !== undefined ? msg.score.toFixed(4) : '';
-  const diskTag = msg.saved_to_disk
-    ? `<span style="color:var(--r);font-size:8px">● SAVED</span>`
-    : `<span style="color:rgba(200,230,245,0.3);font-size:8px">○ MEM ONLY</span>`;
-  div.innerHTML = `
-    <div class="blk-hdr">
-      <span class="blk-num" style="cursor:pointer" title="Click to view forensic report">#${blkNum} ▸ PID ${msg.pid}</span>
-      <span class="blk-time">${ts}</span>
-    </div>
-    <div class="blk-hash">${msg.tx_id || '—'}</div>
-    <div class="blk-row">
-      <span class="blk-pid">${msg.process || 'unknown'}</span>
-      <span style="color:${msg.is_critical?'var(--r)':'var(--y)'};font-weight:700">${score}</span>
-    </div>
-    <div style="margin-top:3px">${diskTag}</div>`;
+  const placeholder = document.getElementById('bc-placeholder');
+  if (placeholder) placeholder.remove();
 
-  // clicking anywhere on block shows its report
+  const div = document.createElement('div');
+  div.className = `bc-block ${msg.is_critical ? 'anom-blk' : 'norm-blk'}`;
+  const ts    = new Date().toTimeString().slice(0,8);
+  const score = msg.score !== undefined ? msg.score.toFixed(4) : '—';
+  const diskTag = msg.saved_to_disk
+    ? `<span style="color:var(--r)">● PERSISTED TO DISK</span>`
+    : `<span style="color:rgba(200,230,245,0.25)">○ MEMORY ONLY</span>`;
+  div.innerHTML = `
+    <div class="bc-blk-top">
+      <span class="bc-blk-num">BLOCK #${blkNum}</span>
+      <span class="bc-blk-time">${ts}</span>
+    </div>
+    <div class="bc-blk-hash">${msg.tx_id || '—'}</div>
+    <div class="bc-blk-row">
+      <span class="bc-blk-proc">PID ${msg.pid} · ${msg.process || 'unknown'}</span>
+      <span class="bc-blk-score" style="color:${msg.is_critical ? 'var(--r)' : 'var(--y)'}">${score}</span>
+    </div>
+    <div class="bc-blk-tag">${diskTag}</div>`;
+
   if (msg.report) {
     div.style.cursor = 'pointer';
-    div.addEventListener('click', () => showReport(msg.report, msg));
+    div.title = 'Click to view forensic report';
+    div.addEventListener('click', () => { showReport(msg.report, msg); switchTab('forensic'); });
   }
   log.insertBefore(div, log.firstChild);
 }
 
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // FORENSIC REPORT VIEWER
-// ════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function syntaxHighlight(json) {
-  const str = JSON.stringify(json, null, 2);
-  return str.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
-    let cls = 'num';
-    if (/^"/.test(match)) cls = /:$/.test(match) ? 'key' : 'str';
-    else if (/true|false/.test(match)) cls = 'bool';
-    return `<span class="${cls}">${match}</span>`;
-  });
+  return JSON.stringify(json, null, 2).replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    match => {
+      let cls = 'num';
+      if (/^"/.test(match)) cls = /:$/.test(match) ? 'key' : 'str';
+      else if (/true|false/.test(match)) cls = 'bool';
+      return `<span class="${cls}">${match}</span>`;
+    });
 }
 
 function showReport(report, msg) {
-  document.getElementById('report-placeholder').style.display = 'none';
+  currentReport = report;
+  document.getElementById('fr-empty').style.display = 'none';
   const el = document.getElementById('report-json');
   el.style.display = 'block';
   el.innerHTML = syntaxHighlight(report);
-  const badge = document.getElementById('report-badge');
-  badge.textContent = msg ? `PID ${msg.pid} · ${new Date().toTimeString().slice(0,8)}` : new Date().toTimeString().slice(0,8);
-  document.getElementById('report-json').scrollTop = 0;
+  document.getElementById('fr-id').textContent  = report.report_id || '—';
+  document.getElementById('fr-ts').textContent  = report.timestamp || new Date().toTimeString().slice(0,8);
+  document.getElementById('fr-pid').textContent = msg ? msg.pid : '—';
+  const hash = report.sha256 || report.hash || '';
+  document.getElementById('fr-hash').textContent = hash ? hash.slice(0,20) + '…' : '—';
+  const statusEl = document.getElementById('fr-status');
+  if (msg && msg.is_critical) { statusEl.textContent = 'CRITICAL THREAT';  statusEl.style.color = 'var(--r)'; }
+  else                         { statusEl.textContent = 'ANOMALY DETECTED'; statusEl.style.color = 'var(--y)'; }
 }
 
+document.getElementById('copy-btn').addEventListener('click', () => {
+  if (!currentReport) return;
+  navigator.clipboard.writeText(JSON.stringify(currentReport, null, 2)).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'COPIED!';
+    btn.style.cssText = 'color:var(--g);border-color:var(--g)';
+    setTimeout(() => { btn.textContent = 'COPY TO CLIPBOARD'; btn.style.cssText = ''; }, 2000);
+  });
+});
 </script>
 </body>
 </html>
