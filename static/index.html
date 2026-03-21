@@ -231,8 +231,34 @@ body::before {
 
 /* ─── CHAIN LOG ─── */
 .chain-scroll {
+  flex:0 0 50%; overflow-y:auto; padding:6px;
+  scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
+  border-bottom: 1px solid rgba(0,212,255,0.1);
+}
+
+/* ─── FORENSIC REPORT VIEWER ─── */
+.report-scroll {
   flex:1; overflow-y:auto; padding:6px;
   scrollbar-width:thin; scrollbar-color: rgba(0,212,255,0.3) transparent;
+}
+#report-json {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(200,230,245,0.6);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.5;
+}
+#report-json .key   { color: var(--c); }
+#report-json .str   { color: var(--c2); }
+#report-json .num   { color: var(--y); }
+#report-json .bool  { color: var(--o); }
+#report-placeholder {
+  color: rgba(200,230,245,0.2);
+  font-size: 10px;
+  text-align: center;
+  padding: 20px 8px;
+  letter-spacing: 1px;
 }
 .block {
   padding: 7px 8px; margin-bottom:5px;
@@ -402,13 +428,21 @@ body::before {
       <canvas id="lat-chart"></canvas>
     </div>
 
-    <!-- RIGHT: CHAIN LOG -->
+    <!-- RIGHT: CHAIN LOG + FORENSIC REPORT -->
     <div class="pnl" id="p-chain">
       <div class="pnl-title">
         HYPERLEDGER FABRIC
         <span class="badge2" style="background:rgba(191,90,242,0.15);color:var(--p)">IMMUTABLE</span>
       </div>
       <div class="chain-scroll" id="chain-log"></div>
+      <div class="pnl-title" style="border-top:1px solid rgba(0,212,255,0.1)">
+        FORENSIC REPORT
+        <span class="badge2" id="report-badge" style="background:rgba(255,45,85,0.1);color:var(--r)">LATEST</span>
+      </div>
+      <div class="report-scroll">
+        <div id="report-placeholder">NO ANOMALY DETECTED YET</div>
+        <pre id="report-json" style="display:none"></pre>
+      </div>
     </div>
 
   </div>
@@ -493,13 +527,14 @@ ws.onmessage = (event) => {
     latChart.update('none');
 
   } else if (msg.type === 'alert') {
-    addBlock(msg.is_critical);
-    updateAlertStrip(msg.msg);
+    addBlock(msg);
+    if (msg.is_critical) updateAlertStrip(msg.msg);  // only real attacks, not system processes
     logFeed(msg.msg);
     if (msg.tx_count !== undefined)
       document.getElementById('h-commits').textContent = msg.tx_count;
     if (msg.latency_ms !== undefined)
       document.getElementById('h-lat').textContent = msg.latency_ms + 'ms';
+    if (msg.report) showReport(msg.report, msg);
   }
 };
 
@@ -630,16 +665,57 @@ const latChart = new Chart(latCtx, {
 // ════════════════════════════════════════════════
 // BLOCKCHAIN LOG
 // ════════════════════════════════════════════════
-function addBlock(isAnom) {
+function addBlock(msg) {
   blkNum++;
   const log = document.getElementById('chain-log');
   const div = document.createElement('div');
-  div.className = `block ${isAnom?'anom-blk':'norm-blk'}`;
+  div.className = `block ${msg.is_critical ? 'anom-blk' : 'norm-blk'}`;
+  const ts = new Date().toTimeString().slice(0,8);
+  const score = msg.score !== undefined ? msg.score.toFixed(4) : '';
+  const diskTag = msg.saved_to_disk
+    ? `<span style="color:var(--r);font-size:8px">● SAVED</span>`
+    : `<span style="color:rgba(200,230,245,0.3);font-size:8px">○ MEM ONLY</span>`;
   div.innerHTML = `
-    <div class="blk-hdr"><span class="blk-num">#${blkNum}</span></div>
-    <div class="blk-hash">${Math.random().toString(36).substring(7)}</div>
-    <div class="blk-row"><span class="blk-pid">TX COMMITTED</span></div>`;
+    <div class="blk-hdr">
+      <span class="blk-num" style="cursor:pointer" title="Click to view forensic report">#${blkNum} ▸ PID ${msg.pid}</span>
+      <span class="blk-time">${ts}</span>
+    </div>
+    <div class="blk-hash">${msg.tx_id || '—'}</div>
+    <div class="blk-row">
+      <span class="blk-pid">${msg.process || 'unknown'}</span>
+      <span style="color:${msg.is_critical?'var(--r)':'var(--y)'};font-weight:700">${score}</span>
+    </div>
+    <div style="margin-top:3px">${diskTag}</div>`;
+
+  // clicking anywhere on block shows its report
+  if (msg.report) {
+    div.style.cursor = 'pointer';
+    div.addEventListener('click', () => showReport(msg.report, msg));
+  }
   log.insertBefore(div, log.firstChild);
+}
+
+// ════════════════════════════════════════════════
+// FORENSIC REPORT VIEWER
+// ════════════════════════════════════════════════
+function syntaxHighlight(json) {
+  const str = JSON.stringify(json, null, 2);
+  return str.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+    let cls = 'num';
+    if (/^"/.test(match)) cls = /:$/.test(match) ? 'key' : 'str';
+    else if (/true|false/.test(match)) cls = 'bool';
+    return `<span class="${cls}">${match}</span>`;
+  });
+}
+
+function showReport(report, msg) {
+  document.getElementById('report-placeholder').style.display = 'none';
+  const el = document.getElementById('report-json');
+  el.style.display = 'block';
+  el.innerHTML = syntaxHighlight(report);
+  const badge = document.getElementById('report-badge');
+  badge.textContent = msg ? `PID ${msg.pid} · ${new Date().toTimeString().slice(0,8)}` : new Date().toTimeString().slice(0,8);
+  document.getElementById('report-json').scrollTop = 0;
 }
 
 </script>

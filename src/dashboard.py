@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
-import json
+import json 
 import asyncio
 import os
 import sys
@@ -27,6 +27,17 @@ app = FastAPI(title="Cyber Triage API", version="2.0.0")
 # ── Shared state ──────────────────────────────────────────────────────────────
 _clients: list[WebSocket] = []
 _tx_count = 0
+blockchain_client_instance = BlockchainClient()
+_alerted_pids: dict = {}   # pid -> last alert timestamp (5-min cooldown)
+
+# Well-known Windows system processes — never save to disk, only show on dashboard
+_KNOWN_SAFE_PIDS   = {0, 4}
+_KNOWN_SAFE_NAMES  = {
+    "System Idle Process", "System", "Registry",
+    "smss.exe", "csrss.exe", "wininit.exe", "winlogon.exe",
+    "services.exe", "lsass.exe", "LsaIso.exe",
+    "fontdrvhost.exe", "svchost.exe", "WUDFHost.exe", "RuntimeBroker.exe",
+}
 _model: GNNAutoencoder | None = None
 
 
@@ -96,6 +107,10 @@ async def triage_loop():
             feed_msg   = f"CYCLE COMPLETE — {len(telemetry)} processes · max_score={max_score:.4f} · loss={loss_val:.4f}"
 
             # 6. Anomaly handling
+            # - Always broadcast to dashboard (every cycle)
+            # - Only save to disk once per 5-min cooldown, and never for known system processes
+            COOLDOWN = 300
+            now = time.time()
             if max_score > 0.75:
                 suspicious_idx = scores.argmax().item()
                 suspicious_pid = node_list[suspicious_idx]
@@ -103,33 +118,74 @@ async def triage_loop():
                     (p for p in telemetry if p['pid'] == suspicious_pid), None
                 )
                 if proc_info:
-                    name = proc_info['name']
+                    from datetime import datetime as _dt
+                    import hashlib as _hl
+                    name     = proc_info['name']
                     findings = (
                         f"GNN Anomaly Score {max_score:.4f} exceeded threshold 0.75. "
                         f"Behavioral deviation in child-parent lineage."
                     )
-                    report, _ = reporter.generate_report(
-                        suspicious_pid, name, max_score, findings
+                    is_known_safe = (
+                        suspicious_pid in _KNOWN_SAFE_PIDS or
+                        name in _KNOWN_SAFE_NAMES
                     )
-                    t0 = time.time()
-                    tx_id, r_hash = blockchain.log_anomaly_event(
-                        suspicious_pid, max_score, name, report
-                    )
-                    latency_ms = round((time.time() - t0) * 1000, 1)
-                    _tx_count += 1
+                    last_saved = _alerted_pids.get(suspicious_pid, 0)
+                    should_save = not is_known_safe and (now - last_saved > COOLDOWN)
+
+                    if should_save:
+                        # Unusual process — save to disk + blockchain
+                        report, _ = reporter.generate_report(
+                            suspicious_pid, name, max_score, findings
+                        )
+                        t0 = time.time()
+                        tx_id, r_hash = blockchain.log_anomaly_event(
+                            suspicious_pid, max_score, name, report
+                        )
+                        latency_ms = round((time.time() - t0) * 1000, 1)
+                        _tx_count += 1
+                        _alerted_pids[suspicious_pid] = now
+                    else:
+                        # Known system process or within cooldown — in-memory report only
+                        _rid = f"REF-{suspicious_pid}-{int(now)}"
+                        report = {
+                            "metadata": {
+                                "report_id":      _rid,
+                                "timestamp":      _dt.now().isoformat(),
+                                "agent_version":  "1.0.0-PRO",
+                                "integrity_check": "SHA-256",
+                                "saved_to_disk":  False,
+                            },
+                            "incident_details": {
+                                "pid":           suspicious_pid,
+                                "process_name":  name,
+                                "anomaly_score": round(max_score, 4),
+                                "classification": "HIGH_RISK" if max_score > 0.85 else "SUSPICIOUS",
+                            },
+                            "findings": findings,
+                            "forensic_lineage": {
+                                "evidence_path": f"/proc/{suspicious_pid}",
+                                "status": "KNOWN_SYSTEM_PROCESS — NOT PERSISTED" if is_known_safe else "COOLDOWN — NOT PERSISTED",
+                            },
+                        }
+                        tx_id = f"HLF-MEM-{_hl.md5(_rid.encode()).hexdigest()[:10]}"
 
                     alert_msg = (
-                        f"CRITICAL: {name} (PID {suspicious_pid}) "
+                        f"{'[SYS]' if is_known_safe else 'CRITICAL'}: {name} (PID {suspicious_pid}) "
                         f"— Score {max_score:.4f} | TX {tx_id}"
                     )
                     feed_msg = alert_msg
                     await broadcast({
-                        "type":        "alert",
-                        "msg":         alert_msg,
-                        "is_critical": True,
-                        "tx_id":       tx_id,
-                        "latency_ms":  latency_ms,
-                        "tx_count":    _tx_count,
+                        "type":          "alert",
+                        "msg":           alert_msg,
+                        "is_critical":   not is_known_safe,
+                        "tx_id":         tx_id,
+                        "latency_ms":    latency_ms,
+                        "tx_count":      _tx_count,
+                        "report":        report,
+                        "pid":           suspicious_pid,
+                        "process":       name,
+                        "score":         round(max_score, 4),
+                        "saved_to_disk": should_save,
                     })
 
             # 7. Write cycle results for any other consumers
@@ -233,15 +289,99 @@ async def inject_test_anomaly():
     blockchain = BlockchainClient()
     tx_id, r_hash = blockchain.log_anomaly_event(INJECTED_PID, injected_score, "crypt0miner.elf", report)
 
+    alert_msg = (
+        f"INJECTED: crypt0miner.elf (PID {INJECTED_PID}) "
+        f"— Score {injected_score:.4f} | TX {tx_id}"
+    )
+    await broadcast({
+        "type":        "alert",
+        "msg":         alert_msg,
+        "is_critical": True,
+        "tx_id":       tx_id,
+        "latency_ms":  0,
+        "tx_count":    _tx_count,
+        "report":      report,
+        "pid":         INJECTED_PID,
+        "process":     "crypt0miner.elf",
+        "score":       round(injected_score, 4),
+    })
+
     return {
-        "injected":          True,
-        "flagged_pid":       INJECTED_PID,
-        "flagged_process":   "crypt0miner.elf",
-        "anomaly_score":     round(injected_score, 4),
+        "injected":           True,
+        "flagged_pid":        INJECTED_PID,
+        "flagged_process":    "crypt0miner.elf",
+        "anomaly_score":      round(injected_score, 4),
         "threshold_exceeded": injected_score > 0.75,
-        "blockchain_tx":     tx_id,
-        "forensic_hash":     r_hash,
-        "report_path":       report_path,
+        "blockchain_tx":      tx_id,
+        "forensic_hash":      r_hash,
+        "report_path":        report_path,
+    }
+
+
+@app.post("/api/inject-custom-anomaly")
+async def inject_custom_anomaly(
+    name: str = "ransom_enc.exe",
+    pid: int  = 6660,
+    ppid: int = 9999,
+    cpu: float  = 87.3,
+    mem: float  = 62.1,
+):
+    """Injects a custom malicious process and broadcasts via WebSocket."""
+    global _tx_count
+    telemetry = collect_processes()
+    telemetry.append({
+        "pid": pid, "ppid": ppid,
+        "name": name,
+        "cpu_percent": cpu, "memory_percent": mem,
+    })
+    save_telemetry(telemetry, "data/current_telemetry.json")
+
+    graph    = build_process_graph(telemetry)
+    data     = convert_to_pyg(graph)
+    model    = get_model()
+    with torch.no_grad():
+        _, adj_hat, x_hat = model(data)
+        scores = get_anomaly_score(data, adj_hat, x_hat)
+
+    node_list  = list(graph.nodes())
+    pid_to_idx = {p: i for i, p in enumerate(node_list)}
+    score      = scores[pid_to_idx[pid]].item() if pid in pid_to_idx else 0.0
+
+    reporter = ForensicReporter(report_dir="reports")
+    findings = (
+        f"GNN Anomaly Score {score:.4f} exceeded threshold 0.75. "
+        f"Orphan process spawned from unknown PPID {ppid}, cpu={cpu}%, mem={mem}%. "
+        f"Malicious behaviour suspected."
+    )
+    report, report_path = reporter.generate_report(pid, name, score, findings)
+    t0 = time.time()
+    tx_id, r_hash = blockchain_client_instance.log_anomaly_event(pid, score, name, report)
+    latency_ms = round((time.time() - t0) * 1000, 1)
+    _tx_count += 1
+
+    alert_msg = f"INJECTED: {name} (PID {pid}) — Score {score:.4f} | TX {tx_id}"
+    await broadcast({
+        "type":          "alert",
+        "msg":           alert_msg,
+        "is_critical":   True,
+        "tx_id":         tx_id,
+        "latency_ms":    latency_ms,
+        "tx_count":      _tx_count,
+        "report":        report,
+        "pid":           pid,
+        "process":       name,
+        "score":         round(score, 4),
+        "saved_to_disk": True,
+    })
+
+    return {
+        "injected":        True,
+        "flagged_pid":     pid,
+        "flagged_process": name,
+        "anomaly_score":   round(score, 4),
+        "blockchain_tx":   tx_id,
+        "forensic_hash":   r_hash,
+        "report_path":     report_path,
     }
 
 
