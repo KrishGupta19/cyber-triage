@@ -518,16 +518,17 @@ async def get_stats():
 
 @app.post("/api/chat")
 async def chat_endpoint(chat: ChatMessage):
-    """Handles chatbot queries using Google Gemini AI as the backend."""
+    """Handles chatbot queries using Anthropic Claude AI as the backend."""
     try:
-        import google.generativeai as genai
+        from anthropic import AsyncAnthropic
     except ImportError:
-        return {"reply": "Error: 'google-generativeai' is not installed. Please run: pip install google-generativeai"}
+        return {"reply": "Error: 'anthropic' is not installed. Please run: pip install anthropic"}
     
-    GEMINI_API_KEY = "AIzaSyATlfqi4jZR_JS_AL8CMlZjk12DUqlcQcI"
+    # Replace this with your NEWLY generated API key from Anthropic Console
+    CLAUDE_API_KEY = "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"
     
     try:
-        genai.configure(api_key=GEMINI_API_KEY)
+        client = AsyncAnthropic(api_key=CLAUDE_API_KEY)
         
         system_instruction = (
             "You are an expert Cyber Security AI assistant embedded in the CyberTriage OS dashboard. "
@@ -536,33 +537,21 @@ async def chat_endpoint(chat: ChatMessage):
             "\"I am specialized in cybersecurity and system anomalies, and cannot answer other types of questions.\" "
             "Keep your valid answers concise, professional, and helpful."
         )
-        prompt = f"{system_instruction}\n\nUser asks: {chat.message}"
         
-        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro']
-        reply = None
-        last_err = None
-        
-        for m_name in models_to_try:
-            try:
-                model = genai.GenerativeModel(m_name)
-                response = await model.generate_content_async(prompt)
-                try:
-                    reply = response.text
-                except ValueError:
-                    reply = "I'm sorry, my safety filters prevented me from generating a response to that specific security query."
-                break  # Success!
-            except Exception as e:
-                last_err = str(e)
-                if '404' in last_err or 'not found' in last_err.lower():
-                    continue  # Try the next model
-                else:
-                    break  # Break on auth errors or API quota limits
-                    
-        if not reply:
-            reply = f"Error connecting to Gemini AI: {last_err}"
+        try:
+            # Unconditionally use Claude's latest flagship model
+            response = await client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=500,
+                system=system_instruction,
+                messages=[{"role": "user", "content": chat.message}]
+            )
+            reply = response.content[0].text
+        except Exception as e:
+            reply = f"API Error: {str(e)}. If you just added funds, please generate a NEW API key in the Anthropic console."
     except Exception as e:
         print(f"[Chatbot Error] {str(e)}")
-        reply = f"Error connecting to Gemini AI: {str(e)}"
+        reply = f"Error connecting to Claude AI: {str(e)}"
         
     return {"reply": reply}
 

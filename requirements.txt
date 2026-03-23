@@ -6,4 +6,4 @@ torch
 torch-geometric
 python-multipart
 requests
-google-generativeai
+anthropic
