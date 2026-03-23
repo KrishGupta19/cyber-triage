@@ -9,7 +9,12 @@ def collect_processes():
     for proc in psutil.process_iter(['pid', 'ppid', 'name', 'cpu_percent', 'memory_percent']):
         try:
             # Capturing core process telemetry
-            processes.append(proc.info)
+            info = proc.info.copy()
+            try:
+                info['username'] = proc.username()
+            except (psutil.AccessDenied, psutil.NoSuchProcess):
+                info['username'] = 'SYSTEM'
+            processes.append(info)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return processes

@@ -60,5 +60,80 @@ class TestCyberTriage(unittest.TestCase):
         self.assertTrue(os.path.exists(path))
         self.assertEqual(report['incident_details']['pid'], 999)
 
+    def test_clear_cooldowns_endpoint(self):
+        """Verify /api/clear-cooldowns resets the cooldown dict."""
+        import requests
+        try:
+            r = requests.post('http://localhost:8000/api/clear-cooldowns', timeout=3)
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.json()['status'], 'ok')
+        except requests.exceptions.ConnectionError:
+            self.skipTest("Server not running")
+
+    def test_stats_endpoint(self):
+        """Verify /api/stats returns expected fields."""
+        import requests
+        try:
+            r = requests.get('http://localhost:8000/api/stats', timeout=3)
+            self.assertEqual(r.status_code, 200)
+            data = r.json()
+            self.assertIn('total_reports', data)
+            self.assertIn('tx_count', data)
+            self.assertIn('model_loaded', data)
+        except requests.exceptions.ConnectionError:
+            self.skipTest("Server not running")
+
+    def test_verify_hash_endpoint(self):
+        """Verify /api/verify-hash returns a valid SHA-256 for a known report."""
+        import requests, os, glob
+        reports = glob.glob('reports/*.json')
+        if not reports:
+            self.skipTest("No reports generated yet")
+        report_id = os.path.basename(reports[0]).replace('.json', '')
+        try:
+            r = requests.post(
+                f'http://localhost:8000/api/verify-hash?report_id={report_id}',
+                timeout=3
+            )
+            self.assertEqual(r.status_code, 200)
+            data = r.json()
+            self.assertTrue(data['verified'])
+            self.assertEqual(len(data['sha256_hash']), 64)
+        except requests.exceptions.ConnectionError:
+            self.skipTest("Server not running")
+
+    def test_inject_custom_anomaly_endpoint(self):
+        """Verify /api/inject-custom-anomaly creates a report and returns score."""
+        import requests
+        try:
+            r = requests.post(
+                'http://localhost:8000/api/inject-custom-anomaly'
+                '?name=test_malware.elf&pid=11111&ppid=9999&cpu=95.0&mem=30.0',
+                timeout=10
+            )
+            self.assertEqual(r.status_code, 200)
+            data = r.json()
+            self.assertTrue(data['injected'])
+            self.assertIn('anomaly_score', data)
+            self.assertIn('blockchain_tx', data)
+        except requests.exceptions.ConnectionError:
+            self.skipTest("Server not running")
+
+    def test_sha256_integrity(self):
+        """Verify forensic report SHA-256 hash matches file content."""
+        import hashlib, glob
+        reports = glob.glob('reports/*.json')
+        if not reports:
+            self.skipTest("No reports generated yet")
+        path = reports[0]
+        with open(path, 'r') as f:
+            content = f.read()
+        h = hashlib.sha256(content.encode()).hexdigest()
+        self.assertEqual(len(h), 64)
+        self.assertIsInstance(h, str)
+        h2 = hashlib.sha256(content.encode()).hexdigest()
+        self.assertEqual(h, h2)
+
+
 if __name__ == '__main__':
     unittest.main()

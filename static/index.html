@@ -437,6 +437,41 @@ body::before {
   50%     { box-shadow:inset 0 0 0 1px rgba(255,45,85,0.6) }
 }
 .flash { animation:flashRed .4s ease; }
+
+.action-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 5px 12px;
+  border: 1px solid rgba(255,45,85,0.5);
+  background: rgba(255,45,85,0.1);
+  color: #ff2d55;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.action-btn:hover {
+  background: rgba(255,45,85,0.2);
+  border-color: #ff2d55;
+}
+.action-btn.cyan-btn {
+  border-color: rgba(0,212,255,0.4);
+  background: rgba(0,212,255,0.08);
+  color: var(--c);
+}
+.action-btn.cyan-btn:hover {
+  background: rgba(0,212,255,0.15);
+  border-color: var(--c);
+}
+.action-btn.green-btn {
+  border-color: rgba(57,255,20,0.4);
+  background: rgba(57,255,20,0.08);
+  color: var(--g);
+}
+.action-btn.green-btn:hover {
+  background: rgba(57,255,20,0.15);
+  border-color: var(--g);
+}
 </style>
 </head>
 <body>
@@ -673,7 +708,11 @@ body::before {
       <div class="bc-right">
         <div class="bc-right-hdr">
           <div class="sec-title">HYPERLEDGER FABRIC LEDGER</div>
-          <span class="badge" style="background:rgba(191,90,242,0.15);color:var(--p)">IMMUTABLE</span>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="action-btn cyan-btn" onclick="clearCooldowns(this)">↺ CLEAR COOLDOWNS</button>
+            <button class="action-btn" onclick="injectTestAnomaly(this)">⚡ INJECT TEST ANOMALY</button>
+            <span class="badge" style="background:rgba(191,90,242,0.15);color:var(--p)">IMMUTABLE</span>
+          </div>
         </div>
         <div class="bc-log-scroll" id="chain-log">
           <div id="bc-placeholder" style="color:rgba(200,230,245,0.15);font-size:10px;text-align:center;padding:32px;letter-spacing:1px">Awaiting blockchain transactions...</div>
@@ -737,7 +776,6 @@ document.querySelectorAll('.tab-btn').forEach(btn =>
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
-const ws = new WebSocket(`ws://${window.location.host}/ws`);
 let procs          = [];
 let blkNum         = 1200;
 let currentReport  = null;
@@ -745,6 +783,7 @@ let recentAlerts   = [];
 let anomalyRecords = [];
 let nodePositions  = {};
 let animFrame      = 0;
+let wsReconnectTimer = null;
 
 function scoreColor(s) {
   if (s > 0.75) return '#ff2d55';
@@ -770,59 +809,84 @@ function scoreRowClass(s) {
 // ═══════════════════════════════════════════
 // WEBSOCKET
 // ═══════════════════════════════════════════
-ws.onmessage = (event) => {
-  const msg = JSON.parse(event.data);
+function connectWS() {
+  const ws = new WebSocket(`ws://${window.location.host}/ws`);
 
-  if (msg.type === 'telemetry') {
-    procs = msg.data.map(p => {
-      const score = p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100;
-      return { pid:p.pid, ppid:p.ppid, name:p.name, score, a: score > 0.75 };
-    });
+  ws.onopen = () => {
+    console.log('[WS] Connected');
+    document.getElementById('ftr-feed').textContent = '> WebSocket connected — live feed active';
+    if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  };
 
-    if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
-    if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
-    if (msg.edge_count !== undefined) {
-      document.getElementById('hud-e').textContent    = msg.edge_count;
-      document.getElementById('fm-g').textContent     = `${procs.length}N·${msg.edge_count}E`;
-      document.getElementById('ov-edges').textContent = msg.edge_count;
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === 'telemetry') {
+      procs = msg.data.map(p => {
+        const score = p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100;
+        return { pid:p.pid, ppid:p.ppid, name:p.name, score, a: score > 0.75 };
+      });
+
+      if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
+      if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
+      if (msg.edge_count !== undefined) {
+        document.getElementById('hud-e').textContent    = msg.edge_count;
+        document.getElementById('fm-g').textContent     = `${procs.length}N·${msg.edge_count}E`;
+        document.getElementById('ov-edges').textContent = msg.edge_count;
+      }
+      if (msg.loss !== undefined) {
+        document.getElementById('hud-l').textContent       = msg.loss.toFixed(4);
+        document.getElementById('fm-l').textContent        = msg.loss.toFixed(4);
+        document.getElementById('ov-loss').textContent     = msg.loss.toFixed(4);
+        document.getElementById('ov-mm-loss').textContent  = msg.loss.toFixed(4);
+        document.getElementById('ov-loss-bar').style.width = Math.min(msg.loss * 100, 100) + '%';
+      }
+      if (msg.feed_msg)
+        document.getElementById('ftr-feed').textContent = '> ' + msg.feed_msg;
+
+      const aScore = msg.anomaly_score ?? 0;
+      anomChart.data.datasets[0].data.push(aScore);
+      anomChart.data.datasets[0].data.shift();
+      anomChart.data.datasets[0].borderColor =
+        aScore > 0.75 ? '#ff2d55' : aScore > 0.40 ? '#ffd60a' : '#39ff14';
+      anomChart.data.datasets[0].backgroundColor =
+        aScore > 0.75 ? 'rgba(255,45,85,0.07)' : aScore > 0.40 ? 'rgba(255,214,10,0.06)' : 'rgba(57,255,20,0.06)';
+      anomChart.update('none');
+
+      const lat = msg.latency_ms ?? 0;
+      latChart.data.datasets[0].data.push(lat);
+      latChart.data.datasets[0].data.shift();
+      latChart.data.datasets[0].backgroundColor = lat < 500 ? '#39ff14' : '#ff2d55';
+      latChart.update('none');
+
+      updateUI();
+
+    } else if (msg.type === 'alert') {
+      addBlock(msg);
+      addAnomalyRecord(msg);
+      if (msg.is_critical) { updateAlertStrip(msg.msg); addRecentAlert(msg); }
+      logFeed(msg.msg);
+      if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
+      if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
+      if (msg.report) showReport(msg.report, msg);
     }
-    if (msg.loss !== undefined) {
-      document.getElementById('hud-l').textContent       = msg.loss.toFixed(4);
-      document.getElementById('fm-l').textContent        = msg.loss.toFixed(4);
-      document.getElementById('ov-loss').textContent     = msg.loss.toFixed(4);
-      document.getElementById('ov-mm-loss').textContent  = msg.loss.toFixed(4);
-      document.getElementById('ov-loss-bar').style.width = Math.min(msg.loss * 100, 100) + '%';
-    }
-    if (msg.feed_msg)
-      document.getElementById('ftr-feed').textContent = '> ' + msg.feed_msg;
+  };
 
-    const aScore = msg.anomaly_score ?? 0;
-    anomChart.data.datasets[0].data.push(aScore);
-    anomChart.data.datasets[0].data.shift();
-    anomChart.data.datasets[0].borderColor =
-      aScore > 0.75 ? '#ff2d55' : aScore > 0.40 ? '#ffd60a' : '#39ff14';
-    anomChart.data.datasets[0].backgroundColor =
-      aScore > 0.75 ? 'rgba(255,45,85,0.07)' : aScore > 0.40 ? 'rgba(255,214,10,0.06)' : 'rgba(57,255,20,0.06)';
-    anomChart.update('none');
+  ws.onclose = () => {
+    console.log('[WS] Disconnected — reconnecting in 3s');
+    document.getElementById('ftr-feed').textContent = '> WebSocket disconnected — reconnecting...';
+    wsReconnectTimer = setTimeout(connectWS, 3000);
+  };
 
-    const lat = msg.latency_ms ?? 0;
-    latChart.data.datasets[0].data.push(lat);
-    latChart.data.datasets[0].data.shift();
-    latChart.data.datasets[0].backgroundColor = lat < 500 ? '#39ff14' : '#ff2d55';
-    latChart.update('none');
+  ws.onerror = (err) => {
+    console.error('[WS] Error', err);
+    ws.close();
+  };
 
-    updateUI();
+  return ws;
+}
 
-  } else if (msg.type === 'alert') {
-    addBlock(msg);
-    addAnomalyRecord(msg);
-    if (msg.is_critical) { updateAlertStrip(msg.msg); addRecentAlert(msg); }
-    logFeed(msg.msg);
-    if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
-    if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
-    if (msg.report) showReport(msg.report, msg);
-  }
-};
+connectWS();
 
 function syncCommits(v) {
   ['h-commits','ov-commits','bc-commits'].forEach(id =>
@@ -1091,8 +1155,12 @@ function addBlock(msg) {
   const placeholder = document.getElementById('bc-placeholder');
   if (placeholder) placeholder.remove();
 
+  const reportId = (msg.report && msg.report.metadata && msg.report.metadata.report_id)
+    ? msg.report.metadata.report_id : '';
+
   const div = document.createElement('div');
   div.className = `bc-block ${msg.is_critical ? 'anom-blk' : 'norm-blk'}`;
+  if (reportId) div.dataset.reportId = reportId;
   const ts    = new Date().toTimeString().slice(0,8);
   const score = msg.score !== undefined ? msg.score.toFixed(4) : '—';
   const diskTag = msg.saved_to_disk
@@ -1108,12 +1176,22 @@ function addBlock(msg) {
       <span class="bc-blk-proc">PID ${msg.pid} · ${msg.process || 'unknown'}</span>
       <span class="bc-blk-score" style="color:${msg.is_critical ? 'var(--r)' : 'var(--y)'}">${score}</span>
     </div>
-    <div class="bc-blk-tag">${diskTag}</div>`;
+    <div class="bc-blk-tag" style="display:flex;align-items:center;justify-content:space-between">
+      <span>${diskTag}</span>
+      <div class="blk-verify">
+        <button class="action-btn green-btn" style="font-size:9px;padding:2px 6px;"
+          onclick="verifyHash(this, '${reportId}')">VERIFY</button>
+        <span class="verify-result" style="font-size:9px;margin-left:6px;"></span>
+      </div>
+    </div>`;
 
   if (msg.report) {
     div.style.cursor = 'pointer';
     div.title = 'Click to view forensic report';
-    div.addEventListener('click', () => { showReport(msg.report, msg); switchTab('forensic'); });
+    div.addEventListener('click', e => {
+      if (e.target.closest('.blk-verify')) return;
+      showReport(msg.report, msg); switchTab('forensic');
+    });
   }
   log.insertBefore(div, log.firstChild);
 }
@@ -1157,6 +1235,58 @@ document.getElementById('copy-btn').addEventListener('click', () => {
     setTimeout(() => { btn.textContent = 'COPY TO CLIPBOARD'; btn.style.cssText = ''; }, 2000);
   });
 });
+
+// ═══════════════════════════════════════════
+// ACTION BUTTONS
+// ═══════════════════════════════════════════
+async function injectTestAnomaly(btn) {
+  const orig = btn.textContent;
+  btn.textContent = 'INJECTING...';
+  btn.disabled = true;
+  try {
+    await fetch('/api/inject-test-anomaly', { method: 'POST' });
+  } catch(e) {
+    console.error(e);
+  }
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+}
+
+async function verifyHash(btn, reportId) {
+  if (!reportId || reportId === 'undefined') {
+    btn.nextElementSibling.textContent = 'NO REPORT';
+    btn.nextElementSibling.style.color = 'var(--y)';
+    return;
+  }
+  btn.textContent = '...';
+  try {
+    const res = await fetch(`/api/verify-hash?report_id=${reportId}`, { method: 'POST' });
+    const data = await res.json();
+    const span = btn.nextElementSibling;
+    if (data.verified) {
+      span.textContent = '✓ VERIFIED';
+      span.style.color = 'var(--g)';
+    } else {
+      span.textContent = '✗ FAILED';
+      span.style.color = 'var(--r)';
+    }
+    setTimeout(() => { span.textContent = ''; btn.textContent = 'VERIFY'; }, 3000);
+  } catch(e) {
+    btn.nextElementSibling.textContent = 'ERROR';
+    btn.textContent = 'VERIFY';
+  }
+}
+
+async function clearCooldowns(btn) {
+  const orig = btn.textContent;
+  btn.textContent = 'CLEARING...';
+  try {
+    await fetch('/api/clear-cooldowns', { method: 'POST' });
+    document.getElementById('ftr-feed').textContent = '> Cooldowns cleared — all PIDs can trigger alerts again';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  } catch(e) {
+    btn.textContent = orig;
+  }
+}
 </script>
 </body>
 </html>

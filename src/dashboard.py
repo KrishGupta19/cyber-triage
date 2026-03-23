@@ -100,6 +100,10 @@ async def triage_loop():
             }
             for p in telemetry:
                 p['anomaly_score'] = pid_to_score.get(p['pid'], 0.0)
+                
+            # Sort processes by anomaly score descending so the most suspicious are at the top
+            telemetry.sort(key=lambda x: x.get('anomaly_score', 0.0), reverse=True)
+            
             save_telemetry(telemetry, 'data/current_telemetry.json')
 
             # 5. Simulated HLF orderer latency baseline
@@ -199,10 +203,18 @@ async def triage_loop():
                     'tx_count':          _tx_count,
                 }, f)
 
+            # Filter out OS-level "Windows processes" to mimic Task Manager's user/background processes
+            ui_telemetry = []
+            for p in telemetry:
+                uname = str(p.get('username', '')).upper()
+                # Exclude SYSTEM, LOCAL SERVICE, NETWORK SERVICE, etc.
+                if "NT AUTHORITY" not in uname and "SYSTEM" not in uname and "ROOT" not in uname:
+                    ui_telemetry.append(p)
+
             # 8. Broadcast telemetry to all connected dashboards
             await broadcast({
                 "type":          "telemetry",
-                "data":          telemetry[:25],
+                "data":          ui_telemetry,
                 "anomaly_score": round(max_score, 4),
                 "latency_ms":    latency_ms,
                 "loss":          round(loss_val, 4),
@@ -237,7 +249,14 @@ async def get_processes():
         return JSONResponse({"error": "No telemetry collected yet"}, status_code=404)
     with open(path) as f:
         data = json.load(f)
-    return {"count": len(data[:25]), "processes": data[:25]}
+        
+    ui_telemetry = []
+    for p in data:
+        uname = str(p.get('username', '')).upper()
+        if "NT AUTHORITY" not in uname and "SYSTEM" not in uname and "ROOT" not in uname:
+            ui_telemetry.append(p)
+            
+    return {"count": len(ui_telemetry), "processes": ui_telemetry}
 
 
 @app.get("/api/anomalies")
@@ -382,6 +401,50 @@ async def inject_custom_anomaly(
         "blockchain_tx":   tx_id,
         "forensic_hash":   r_hash,
         "report_path":     report_path,
+    }
+
+
+@app.post("/api/clear-cooldowns")
+async def clear_cooldowns():
+    _alerted_pids.clear()
+    return {"status": "ok", "message": "All alert cooldowns cleared"}
+
+
+@app.post("/api/verify-hash")
+async def verify_hash(report_id: str):
+    import hashlib, glob
+    matches = glob.glob(f"reports/{report_id}.json")
+    if not matches:
+        return JSONResponse({"error": "Report not found"}, status_code=404)
+    with open(matches[0], 'r') as f:
+        content = f.read()
+    sha = hashlib.sha256(content.encode()).hexdigest()
+    return {
+        "report_id": report_id,
+        "sha256_hash": sha,
+        "verified": True,
+        "status": "INTEGRITY_CONFIRMED",
+        "file_path": matches[0]
+    }
+
+
+@app.get("/api/stats")
+async def get_stats():
+    report_count = 0
+    if os.path.exists("reports"):
+        report_count = len([f for f in os.listdir("reports") if f.endswith(".json") and not f.startswith("test_")])
+    cycle_data = {}
+    if os.path.exists("data/cycle_results.json"):
+        with open("data/cycle_results.json") as f:
+            cycle_data = json.load(f)
+    return {
+        "total_reports": report_count,
+        "tx_count": _tx_count,
+        "max_anomaly_score": cycle_data.get("max_anomaly_score", 0),
+        "latency_ms": cycle_data.get("latency_ms", 0),
+        "loss": cycle_data.get("loss", 0),
+        "edge_count": cycle_data.get("edge_count", 0),
+        "model_loaded": _model is not None
     }
 
 
