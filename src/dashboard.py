@@ -16,6 +16,7 @@ sys.path.insert(0, _THIS_DIR)
 
 import torch
 import torch.nn.functional as F
+import torch.optim as optim
 from collector import collect_processes, save_telemetry
 from graph_builder import build_process_graph, convert_to_pyg
 from model import GNNAutoencoder, get_anomaly_score, compute_loss
@@ -39,6 +40,7 @@ _KNOWN_SAFE_NAMES  = {
     "fontdrvhost.exe", "svchost.exe", "WUDFHost.exe", "RuntimeBroker.exe",
 }
 _model: GNNAutoencoder | None = None
+_optimizer: optim.Optimizer | None = None
 
 
 def get_model() -> GNNAutoencoder:
@@ -55,6 +57,13 @@ def get_model() -> GNNAutoencoder:
             print("[Model] No saved weights found — using untrained model")
         _model.eval()
     return _model
+
+
+def get_optimizer() -> optim.Optimizer:
+    global _optimizer
+    if _optimizer is None:
+        _optimizer = optim.Adam(get_model().parameters(), lr=0.001) # Lower learning rate for fine-tuning
+    return _optimizer
 
 
 async def broadcast(msg: dict):
@@ -237,9 +246,56 @@ async def triage_loop():
         await asyncio.sleep(7)
 
 
+# ── Continuous learning loop ──────────────────────────────────────────────────
+async def auto_train_loop():
+    """Periodically fine-tunes the model on recent clean telemetry to adapt to normal system changes."""
+    while True:
+        await asyncio.sleep(120) # Wake up every 2 minutes
+        try:
+            path = "data/current_telemetry.json"
+            if not os.path.exists(path):
+                continue
+            
+            with open(path, 'r') as f:
+                telemetry = json.load(f)
+            
+            # Prevent Model Poisoning: Only train if the system is completely clean
+            if any(p.get('anomaly_score', 0.0) > 0.60 for p in telemetry):
+                print("[Auto-Train] System has elevated activity. Skipping training to prevent model poisoning.")
+                continue
+
+            graph    = build_process_graph(telemetry)
+            pyg_data = convert_to_pyg(graph)
+            
+            model     = get_model()
+            optimizer = get_optimizer()
+            
+            model.train()
+            for _ in range(5):  # Fine-tune for 5 short epochs
+                optimizer.zero_grad()
+                z, adj_hat, x_hat = model(pyg_data)
+                loss = compute_loss(pyg_data, adj_hat, x_hat)
+                loss.backward()
+                optimizer.step()
+            
+            model.eval()
+            torch.save(model.state_dict(), os.path.join(_PROJECT_ROOT, "models", "gnn_baseline.pt"))
+            print(f"[Auto-Train] Model successfully fine-tuned on clean baseline data. New Loss: {loss.item():.4f}")
+            
+            from datetime import datetime
+            await broadcast({
+                "type": "auto_train",
+                "timestamp": datetime.now().strftime("%H:%M:%S"),
+                "loss": loss.item()
+            })
+        except Exception as e:
+            print(f"[Auto-Train] Error: {e}")
+
+
 @app.on_event("startup")
 async def startup():
     asyncio.create_task(triage_loop())
+    asyncio.create_task(auto_train_loop())
 
 
 # ── REST endpoints ─────────────────────────────────────────────────────────────

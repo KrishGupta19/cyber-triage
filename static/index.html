@@ -7,7 +7,6 @@
   <title>Decentralized &amp; Behavioural Analytical Cyber Triage Tool</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     /* ─── RESET & ROOT ─── */
     *,
@@ -674,75 +673,6 @@
       min-height: 0;
     }
 
-    .donut-panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .donut-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      flex-shrink: 0;
-      margin-bottom: 8px;
-    }
-
-    .donut-wrap {
-      flex: 1;
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    .donut-center {
-      position: absolute;
-      text-align: center;
-      pointer-events: none;
-    }
-
-    .donut-num {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1;
-    }
-
-    .donut-lbl {
-      font-size: 10px;
-      color: var(--text2);
-      margin-top: 2px;
-    }
-
-    .donut-legend {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 10px;
-      flex-shrink: 0;
-    }
-
-    .dl-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 10px;
-      color: var(--text2);
-    }
-
-    .dl-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
     .sys-panel {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -908,8 +838,9 @@
       }
     }
 
-    /* ─── REPORT MODAL ─── */
-    #report-modal {
+    /* ─── MODALS ─── */
+    #report-modal,
+    #model-modal {
       display: none;
       position: fixed;
       inset: 0;
@@ -919,7 +850,8 @@
       justify-content: center;
     }
 
-    #report-modal.open {
+    #report-modal.open,
+    #model-modal.open {
       display: flex;
     }
 
@@ -1176,26 +1108,14 @@
       <!-- Right Column: Donut + System Status -->
       <div class="right-col">
 
-        <div class="donut-panel">
-          <div class="donut-title">Incident Distribution</div>
-          <div class="donut-wrap">
-            <canvas id="donut-canvas"></canvas>
-            <div class="donut-center">
-              <div class="donut-num" id="donut-num">0</div>
-              <div class="donut-lbl">Total</div>
-            </div>
-          </div>
-          <div class="donut-legend">
-            <div class="dl-item">
-              <div class="dl-dot" style="background:#ef4444"></div><span id="leg-h">0 High</span>
-            </div>
-            <div class="dl-item">
-              <div class="dl-dot" style="background:#f59e0b"></div><span id="leg-m">0 Medium</span>
-            </div>
-            <div class="dl-item">
-              <div class="dl-dot" style="background:#22c55e"></div><span id="leg-l">0 Low</span>
-            </div>
-          </div>
+        <div class="panel" style="padding: 16px; flex-shrink: 0;">
+          <div class="panel-title" style="margin-bottom: 4px;">AI Model Diagnostics</div>
+          <div class="panel-sub" style="margin-bottom: 14px;">GNN Autoencoder · Continuous Learning</div>
+          <button class="verify-btn"
+            style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.22); color: var(--blue);"
+            onclick="openModelModal()">
+            🧠 View Auto-Train Insights
+          </button>
         </div>
 
         <div class="sys-panel">
@@ -1216,6 +1136,12 @@
             <span class="sys-key">Triage Engine</span>
             <span class="sys-val">
               <div class="sys-dot"></div>ACTIVE
+            </span>
+          </div>
+          <div class="sys-row">
+            <span class="sys-key">Continuous Learning</span>
+            <span class="sys-val" id="sys-train-val" style="color:var(--text2);font-weight:500">
+              Waiting...
             </span>
           </div>
         </div>
@@ -1262,6 +1188,34 @@
   </div>
 
   <!-- ══════════════════════════════════════════
+     MODEL MODAL
+══════════════════════════════════════════ -->
+  <div id="model-modal" onclick="if(event.target===this)closeModelModal()">
+    <div class="modal-box" style="width: 500px;">
+      <div class="modal-hdr">
+        <div class="modal-title">🧠 Auto-Trained Model Details</div>
+        <button class="modal-close" onclick="closeModelModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 12px; color: var(--text); line-height: 1.6;">
+          <p><strong>Architecture:</strong> GNN Autoencoder (GAT Encoder + MLP Decoder)</p>
+          <p><strong>Baseline Strategy:</strong> 95th-percentile dynamic reconstruction error</p>
+          <p><strong>Continuous Learning:</strong> <span style="color:var(--green)">Active</span> (2-minute intervals)
+          </p>
+          <p><strong>Protection:</strong> Anti-poisoning heuristics enabled (skips training if anomalies present)</p>
+        </div>
+        <hr style="border:0; border-top:1px solid var(--border2); margin: 16px 0;">
+        <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--text);">Recent Training Cycles
+        </div>
+        <div id="train-history-list"
+          style="font-size: 11px; color: var(--text2); display: flex; flex-direction: column; gap: 8px;">
+          <div style="opacity: 0.5;">No training cycles completed in this session yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════════ -->
   <script>
@@ -1275,7 +1229,7 @@
     let incCounter = 0;
     let tlEvents = [];
     let bcRecords = [];
-    let donut = { h: 0, m: 0, l: 0 };
+    let trainHistory = [];
     let lastReport = null;
     let showAll = false;
     let prevTotal = 0;
@@ -1333,55 +1287,6 @@
       return `<br><span class="sc-delta ${d > 0 ? 'd-up' : 'd-zero'}">
     ${d > 0 ? '↑' : '↓'} ${Math.abs(d)} since last
   </span>`;
-    }
-
-    // ═══════════════════════════════════════════════
-    // DONUT CHART
-    // ═══════════════════════════════════════════════
-    const donutCtx = document.getElementById('donut-canvas').getContext('2d');
-    const donutChart = new Chart(donutCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['High', 'Medium', 'Low'],
-        datasets: [{
-          data: [0, 0, 1],
-          backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'],
-          borderColor: '#141728',
-          borderWidth: 3,
-          hoverOffset: 5
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        cutout: '68%',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` },
-            backgroundColor: '#1a1d2e',
-            borderColor: 'rgba(255,255,255,0.08)',
-            borderWidth: 1,
-            titleColor: '#e2e8f0',
-            bodyColor: '#94a3b8',
-            padding: 10
-          }
-        }
-      }
-    });
-
-    function refreshDonut() {
-      const total = donut.h + donut.m + donut.l;
-      donutChart.data.datasets[0].data = [
-        donut.h,
-        donut.m,
-        total === 0 ? 1 : donut.l
-      ];
-      donutChart.update('none');
-      document.getElementById('donut-num').textContent = total;
-      document.getElementById('leg-h').textContent = `${donut.h} High`;
-      document.getElementById('leg-m').textContent = `${donut.m} Medium`;
-      document.getElementById('leg-l').textContent = `${donut.l} Low`;
     }
 
     // ═══════════════════════════════════════════════
@@ -1464,11 +1369,6 @@
 
       incidents.unshift({ id, type, risk, score, pri });
       if (incidents.length > 6) incidents.pop();
-
-      if (pri === 'h') donut.h++;
-      else if (pri === 'm') donut.m++;
-      else donut.l++;
-      refreshDonut();
 
       rebuildTriageTable();
       return id;
@@ -1576,6 +1476,25 @@
       document.getElementById('report-modal').classList.remove('open');
     }
 
+    function openModelModal() {
+      document.getElementById('model-modal').classList.add('open');
+    }
+
+    function closeModelModal() {
+      document.getElementById('model-modal').classList.remove('open');
+    }
+
+    function rebuildTrainHistory() {
+      const list = document.getElementById('train-history-list');
+      if (!trainHistory.length) return;
+      list.innerHTML = trainHistory.map(th => `
+        <div style="display:flex; justify-content:space-between; background:var(--panel2); padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
+          <span><span style="color:var(--green)">✓</span> Success · ${th.ts}</span>
+          <span style="font-family:monospace; color:var(--blue)">Loss: ${th.loss.toFixed(4)}</span>
+        </div>
+      `).join('');
+    }
+
     // ═══════════════════════════════════════════════
     // VERIFY INTEGRITY
     // ═══════════════════════════════════════════════
@@ -1672,6 +1591,17 @@
             document.getElementById('sc-bc').textContent = msg.tx_count;
             prevBc = msg.tx_count;
           }
+        } else if (msg.type === 'auto_train') {
+          const valEl = document.getElementById('sys-train-val');
+          if (valEl) {
+            valEl.style.color = 'var(--green)';
+            valEl.innerHTML = `<div class="sys-dot"></div>${msg.timestamp}`;
+          }
+          document.getElementById('feed-msg').textContent = `Continuous Learning cycle complete — Model updated (Loss: ${msg.loss.toFixed(4)})`;
+
+          trainHistory.unshift({ ts: msg.timestamp, loss: msg.loss });
+          if (trainHistory.length > 5) trainHistory.pop();
+          rebuildTrainHistory();
         }
       };
 
@@ -1717,7 +1647,10 @@
 
     // ESC closes modal
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') closeModal();
+      if (e.key === 'Escape') {
+        closeModal();
+        closeModelModal();
+      }
     });
   </script>
 </body>
