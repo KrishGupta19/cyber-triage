@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 import uvicorn
 import json 
 import asyncio
@@ -24,6 +25,9 @@ from blockchain_client import BlockchainClient
 from forensic_reporter import ForensicReporter
 
 app = FastAPI(title="Cyber Triage API", version="2.0.0")
+
+class ChatMessage(BaseModel):
+    message: str
 
 # ── Shared state ──────────────────────────────────────────────────────────────
 _clients: list[WebSocket] = []
@@ -510,6 +514,57 @@ async def get_stats():
         "edge_count": cycle_data.get("edge_count", 0),
         "model_loaded": _model is not None
     }
+
+
+@app.post("/api/chat")
+async def chat_endpoint(chat: ChatMessage):
+    """Handles chatbot queries using Google Gemini AI as the backend."""
+    try:
+        import google.generativeai as genai
+    except ImportError:
+        return {"reply": "Error: 'google-generativeai' is not installed. Please run: pip install google-generativeai"}
+    
+    GEMINI_API_KEY = "AIzaSyATlfqi4jZR_JS_AL8CMlZjk12DUqlcQcI"
+    
+    try:
+        genai.configure(api_key=GEMINI_API_KEY)
+        
+        system_instruction = (
+            "You are an expert Cyber Security AI assistant embedded in the CyberTriage OS dashboard. "
+            "You must ONLY answer questions related to cybersecurity, IT, computer networks, or system anomalies. "
+            "If the user asks about ANY other topic (e.g., general knowledge, cooking, sports, pop culture, math), you must decline by answering exactly with: "
+            "\"I am specialized in cybersecurity and system anomalies, and cannot answer other types of questions.\" "
+            "Keep your valid answers concise, professional, and helpful."
+        )
+        prompt = f"{system_instruction}\n\nUser asks: {chat.message}"
+        
+        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro', 'gemini-pro']
+        reply = None
+        last_err = None
+        
+        for m_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(m_name)
+                response = await model.generate_content_async(prompt)
+                try:
+                    reply = response.text
+                except ValueError:
+                    reply = "I'm sorry, my safety filters prevented me from generating a response to that specific security query."
+                break  # Success!
+            except Exception as e:
+                last_err = str(e)
+                if '404' in last_err or 'not found' in last_err.lower():
+                    continue  # Try the next model
+                else:
+                    break  # Break on auth errors or API quota limits
+                    
+        if not reply:
+            reply = f"Error connecting to Gemini AI: {last_err}"
+    except Exception as e:
+        print(f"[Chatbot Error] {str(e)}")
+        reply = f"Error connecting to Gemini AI: {str(e)}"
+        
+    return {"reply": reply}
 
 
 @app.get("/")
