@@ -68,7 +68,7 @@ async def broadcast(msg: dict):
         _clients.remove(ws)
 
 
-# ── Core triage loop (runs every 5 s) ─────────────────────────────────────────
+# ── Core triage loop (runs every 7 s) ─────────────────────────────────────────
 async def triage_loop():
     global _tx_count
     blockchain = BlockchainClient()
@@ -90,6 +90,7 @@ async def triage_loop():
             with torch.no_grad():
                 z, adj_hat, x_hat = model(pyg_data)
                 scores    = get_anomaly_score(pyg_data, adj_hat, x_hat)
+                
                 max_score = scores.max().item()
                 loss_val  = compute_loss(pyg_data, adj_hat, x_hat).item()
 
@@ -125,10 +126,16 @@ async def triage_loop():
                     from datetime import datetime as _dt
                     import hashlib as _hl
                     name     = proc_info['name']
+                    hosts    = proc_info.get('remote_hosts', [])
                     findings = (
                         f"GNN Anomaly Score {max_score:.4f} exceeded threshold 0.75. "
                         f"Behavioral deviation in child-parent lineage."
                     )
+                    
+                    # Append network data to the forensic report
+                    if hosts:
+                        findings += f" Network connections tracked to: {', '.join(hosts)}."
+                        
                     is_known_safe = (
                         suspicious_pid in _KNOWN_SAFE_PIDS or
                         name in _KNOWN_SAFE_NAMES
@@ -227,7 +234,7 @@ async def triage_loop():
             print(f"[Triage Loop] Error: {e}")
             import traceback; traceback.print_exc()
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(7)
 
 
 @app.on_event("startup")
@@ -323,6 +330,7 @@ async def inject_test_anomaly():
         "pid":         INJECTED_PID,
         "process":     "crypt0miner.elf",
         "score":       round(injected_score, 4),
+        "saved_to_disk": True,
     })
 
     return {
@@ -460,6 +468,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     _clients.append(websocket)
     print(f"[WS] Client connected ({len(_clients)} total)")
+
     try:
         while True:
             await asyncio.sleep(30)   # keepalive; triage_loop does the pushing

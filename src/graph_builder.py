@@ -24,7 +24,7 @@ def build_process_graph(telemetry):
 
     # Ensure synthetic root exists
     if 0 not in pids:
-        G.add_node(0, name='[root]', cpu_percent=0.0, memory_percent=0.0)
+        G.add_node(0, name='[root]', cpu_percent=0.0, memory_percent=0.0, connection_count=0, has_web=False, has_dns=False)
 
     for proc in telemetry:
         pid = proc['pid']
@@ -32,9 +32,12 @@ def build_process_graph(telemetry):
         name = proc['name']
         cpu = proc.get('cpu_percent', 0.0) or 0.0
         mem = proc.get('memory_percent', 0.0) or 0.0
+        conn_count = proc.get('connection_count', 0)
+        has_web = proc.get('has_web', False)
+        has_dns = proc.get('has_dns', False)
 
         # Add node with behavioural features
-        G.add_node(pid, name=name, cpu_percent=cpu, memory_percent=mem)
+        G.add_node(pid, name=name, cpu_percent=cpu, memory_percent=mem, connection_count=conn_count, has_web=has_web, has_dns=has_dns)
 
         # Add edge from PPID to PID if PPID exists in the trace
         if ppid in pids:
@@ -75,10 +78,19 @@ def convert_to_pyg(G):
         cpu = min((attrs.get('cpu_percent', 0.0) or 0.0), CPU_MAX) / CPU_MAX
         mem = min((attrs.get('memory_percent', 0.0) or 0.0), MEM_MAX) / MEM_MAX
         pid_norm = min(pid, PID_MAX) / PID_MAX if isinstance(pid, int) else 0.0
+        
+        conn_count = attrs.get('connection_count', 0)
+        conn_norm = min(conn_count, 100.0) / 100.0  # Normalize up to 100 connections max
+        has_web = 1.0 if attrs.get('has_web', False) else 0.0
+        has_dns = 1.0 if attrs.get('has_dns', False) else 0.0
+        
         x[i, 0] = cpu
         x[i, 1] = mem
         x[i, 2] = pid_norm
-        x[i, 3] = 1.0  # constant bias
+        x[i, 3] = conn_norm
+        x[i, 4] = has_web
+        x[i, 5] = has_dns
+        x[i, 6] = 1.0  # constant bias
 
     return Data(x=x, edge_index=edge_index)
 

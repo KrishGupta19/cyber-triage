@@ -63,10 +63,10 @@ def compute_loss(data, adj_hat, x_hat):
 def get_anomaly_score(data, adj_hat, x_hat):
     """Per-node anomaly score in [0, 1].
 
-    Uses the 99th-percentile reconstruction error of the *current monitoring
+    Uses the 95th-percentile reconstruction error of the *current monitoring
     cycle* as the normalisation baseline:
-      - A process at the p99 error level scores 0.5  (borderline normal)
-      - A process with 2× p99 error scores 1.0       (clearly anomalous)
+      - A process at the p95 error level scores 0.5  (normal)
+      - A process with 2× p95 error scores 1.0       (clearly anomalous)
       - Everything in a normal-only graph scores ≤ 0.5 (never triggers 0.75)
       - A malicious outlier (e.g. crypt0miner) scores 1.0
 
@@ -74,11 +74,11 @@ def get_anomaly_score(data, adj_hat, x_hat):
     calibration file whose validity decays as process states evolve.
     """
     feat_error = torch.mean((data.x - x_hat)**2, dim=1)
-    # p75 of the batch is a stable "normal baseline":
-    #   - 75 % of processes score ≤ 0.5 (below the 0.75 alert threshold)
-    #   - An outlier with error > 1.5 × p75 crosses the threshold
+    # p95 of the batch is a stable "normal baseline":
+    #   - 95% of processes score ≤ 0.5 (below the 0.75 alert threshold)
+    #   - An outlier with error > 1.5 × p95 crosses the threshold
     #   - Works for both small test graphs and large live graphs
-    p75 = torch.quantile(feat_error, 0.75).item()
-    if p75 < 1e-10:
-        p75 = feat_error.max().item() + 1e-10
-    return torch.clamp(feat_error / (2.0 * p75), 0.0, 1.0)
+    p95 = torch.quantile(feat_error, 0.95).item()
+    if p95 < 1e-10:
+        p95 = feat_error.max().item() + 1e-10
+    return torch.clamp(feat_error / (2.0 * p95), 0.0, 1.0)
