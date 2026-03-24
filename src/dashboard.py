@@ -585,7 +585,9 @@ async def chat_endpoint(chat: ChatMessage):
     except ImportError:
         return {"reply": "Error: 'anthropic' is not installed. Please run: pip install anthropic"}
     
-    CLAUDE_API_KEY = "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"
+    CLAUDE_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not CLAUDE_API_KEY:
+        return {"reply": "⚠ AI Assistant unavailable — the project owner needs to set the ANTHROPIC_API_KEY environment variable before starting the server."}
     
     try:
         client = AsyncAnthropic(api_key=CLAUDE_API_KEY)
