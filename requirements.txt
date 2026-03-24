@@ -7,3 +7,4 @@ torch-geometric
 python-multipart
 requests
 anthropic
+scapy

@@ -22,6 +22,7 @@ from collector import collect_processes, save_telemetry
 from graph_builder import build_process_graph, convert_to_pyg
 from model import GNNAutoencoder, get_anomaly_score, compute_loss
 from blockchain_client import BlockchainClient
+import packet_sniffer
 from forensic_reporter import ForensicReporter
 
 app = FastAPI(title="Cyber Triage API", version="2.0.0")
@@ -320,6 +321,23 @@ async def auto_train_loop():
             print(f"[Auto-Train] Error: {e}")
 
 
+async def packet_broadcast_loop():
+    """Broadcasts live packet capture data to all connected dashboards every 2 seconds."""
+    while True:
+        await asyncio.sleep(2)
+        try:
+            pkts  = packet_sniffer.get_recent(50)
+            stats = packet_sniffer.get_stats()
+            if pkts:
+                await broadcast({
+                    "type":   "packets",
+                    "packets": pkts,
+                    "stats":   stats,
+                })
+        except Exception as e:
+            print(f"[PacketBroadcast] Error: {e}")
+
+
 @app.on_event("startup")
 async def startup():
     global _tx_count
@@ -330,8 +348,10 @@ async def startup():
             if f.endswith(".json") and not f.startswith("test_")
         ])
         print(f"[Startup] Seeded tx_count={_tx_count} from existing reports")
+    packet_sniffer.start()
     asyncio.create_task(triage_loop())
     asyncio.create_task(auto_train_loop())
+    asyncio.create_task(packet_broadcast_loop())
 
 
 # ── REST endpoints ─────────────────────────────────────────────────────────────
@@ -548,6 +568,13 @@ async def get_stats():
         "edge_count": cycle_data.get("edge_count", 0),
         "model_loaded": _model is not None
     }
+
+
+@app.get("/api/packets")
+async def get_packets(limit: int = 100):
+    pkts  = packet_sniffer.get_recent(min(limit, 500))
+    stats = packet_sniffer.get_stats()
+    return {"count": len(pkts), "packets": pkts, "stats": stats}
 
 
 @app.post("/api/chat")

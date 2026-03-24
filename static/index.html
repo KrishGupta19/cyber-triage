@@ -198,7 +198,7 @@
     /* ─── STAT CARDS ROW ─── */
     .cards-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       flex-shrink: 0;
     }
@@ -238,6 +238,99 @@
       animation: panel-flash 1.4s ease-out forwards;
     }
 
+    /* ─── PACKET CAPTURE PANEL (fixed drawer — only visible when open) ─── */
+    #pkt-panel {
+      position: fixed;
+      bottom: 34px;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: var(--panel);
+      border-top: 1px solid rgba(20,184,166,0.4);
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+      /* hidden by default — only shows when _pktPanelOpen = true */
+      display: none;
+    }
+
+    #pkt-panel.open { display: block; }
+
+    #pkt-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s;
+    }
+
+    #pkt-hdr:hover { background: var(--panel2); }
+
+    #pkt-body {
+      height: 240px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-top: 1px solid var(--border2);
+    }
+
+    #pkt-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace, monospace;
+    }
+
+    #pkt-table th {
+      position: sticky;
+      top: 0;
+      background: var(--panel2);
+      padding: 4px 8px;
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: .5px;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+
+    #pkt-table td {
+      padding: 3px 8px;
+      border-bottom: 1px solid var(--border2);
+      white-space: nowrap;
+      max-width: 220px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #pkt-table tbody tr:hover { background: rgba(255,255,255,.03); }
+
+    .pkt-HTTP   { color: #38bdf8; }
+    .pkt-HTTPS  { color: #818cf8; }
+    .pkt-DNS    { color: #c084fc; }
+    .pkt-TCP    { color: #34d399; }
+    .pkt-UDP    { color: #22d3ee; }
+    .pkt-ICMP   { color: #fb923c; }
+    .pkt-SSH    { color: #f59e0b; }
+    .pkt-SMB    { color: #f87171; }
+    .pkt-RDP    { color: #f87171; }
+    .pkt-default{ color: var(--text2); }
+
+    .proto-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 3px;
+      cursor: default;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity:1; }
+      50%      { opacity:.3; }
+    }
+
     .stat-card::before {
       content: '';
       position: absolute;
@@ -262,6 +355,18 @@
 
     .c-purple::before {
       background: #8b5cf6;
+    }
+
+    .c-teal::before {
+      background: #14b8a6;
+    }
+
+    .sc-icon.i-teal {
+      background: rgba(20, 184, 166, 0.13);
+    }
+
+    .v-teal {
+      color: #14b8a6;
     }
 
     .sc-icon {
@@ -1211,6 +1316,15 @@
         </div>
       </div>
 
+      <div class="stat-card c-teal" onclick="openPacketPanel()">
+        <div class="sc-icon i-teal">📡</div>
+        <div class="sc-body">
+          <div class="sc-lbl">Packet Capture</div>
+          <div class="sc-val v-teal" id="sc-pkt">—</div>
+          <div class="sc-delta d-zero" id="sc-pkt-d">pkt/s · click to open</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ROW 2: ANOMALY DETECTION + INCIDENT TRIAGE -->
@@ -1370,6 +1484,40 @@
     </div>
 
   </div><!-- #main -->
+
+  <!-- PACKET CAPTURE DRAWER (fixed overlay — never affects layout) -->
+  <div id="pkt-panel">
+    <div id="pkt-hdr" onclick="togglePacketPanel()">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="pkt-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;animation:pulse 1.5s infinite;flex-shrink:0;"></span>
+        <span style="font-weight:600;font-size:12px;letter-spacing:.5px;">LIVE PACKET CAPTURE</span>
+        <span id="pkt-badge" style="font-size:10px;padding:2px 7px;border-radius:3px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);">0 pkts</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <span id="pkt-pps"  style="font-size:11px;color:var(--text2);">0 pkt/s</span>
+        <span id="pkt-kbps" style="font-size:11px;color:var(--text2);">0 KB/s</span>
+        <span id="pkt-total-bytes" style="font-size:11px;color:var(--text2);">0 B total</span>
+        <span style="font-size:12px;color:var(--text2);cursor:pointer;padding:2px 6px;" title="Close">✕</span>
+      </div>
+    </div>
+    <div id="pkt-body">
+      <div id="pkt-proto-bar" style="display:flex;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border2);flex-wrap:wrap;"></div>
+      <div style="overflow-x:auto;flex:1;overflow-y:auto;">
+        <table id="pkt-table">
+          <thead>
+            <tr>
+              <th>No.</th><th>Time</th><th>Source</th><th>Destination</th>
+              <th>Protocol</th><th>Len</th><th>Info</th>
+            </tr>
+          </thead>
+          <tbody id="pkt-tbody"></tbody>
+        </table>
+      </div>
+      <div id="pkt-empty" style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">
+        Waiting for packets — requires Administrator privileges and Npcap on Windows
+      </div>
+    </div>
+  </div>
 
   <!-- ══════════════════════════════════════════
      FOOTER
@@ -1875,6 +2023,9 @@
           trainHistory.unshift({ ts: msg.timestamp, loss: msg.loss });
           if (trainHistory.length > 5) trainHistory.pop();
           rebuildTrainHistory();
+
+        } else if (msg.type === 'packets') {
+          updatePacketPanel(msg.packets, msg.stats);
         }
       };
 
@@ -1895,6 +2046,88 @@
     // ═══════════════════════════════════════════════
     // ACTION BUTTONS
     // ═══════════════════════════════════════════════
+    // ═══════════════════════════════════════════════
+    // PACKET CAPTURE
+    // ═══════════════════════════════════════════════
+    let _pktPanelOpen = false;
+    let _pktSeenNos   = new Set();
+
+    const PROTO_COLORS = {
+      HTTP: '#38bdf8', HTTPS: '#818cf8', DNS: '#c084fc',
+      TCP:  '#34d399', UDP:  '#22d3ee', ICMP: '#fb923c',
+      SSH:  '#f59e0b', SMB:  '#f87171', RDP: '#f87171',
+    };
+
+    function protoClass(p) {
+      return PROTO_COLORS[p] ? `pkt-${p}` : 'pkt-default';
+    }
+
+    function fmtBytes(b) {
+      if (b < 1024)      return b + ' B';
+      if (b < 1048576)   return (b/1024).toFixed(1) + ' KB';
+      return (b/1048576).toFixed(2) + ' MB';
+    }
+
+    function openPacketPanel() {
+      _pktPanelOpen = true;
+      document.getElementById('pkt-panel').classList.add('open');
+    }
+
+    function togglePacketPanel() {
+      _pktPanelOpen = false;
+      document.getElementById('pkt-panel').classList.remove('open');
+    }
+
+    function updatePacketPanel(packets, stats) {
+      // Stats bar + card
+      document.getElementById('pkt-pps').textContent   = stats.pps + ' pkt/s';
+      document.getElementById('pkt-kbps').textContent  = stats.kbps + ' KB/s';
+      document.getElementById('pkt-total-bytes').textContent = fmtBytes(stats.bytes);
+      document.getElementById('pkt-badge').textContent = stats.total + ' pkts';
+      document.getElementById('sc-pkt').textContent    = stats.pps;
+      document.getElementById('sc-pkt-d').textContent  = stats.kbps + ' KB/s · click to open';
+
+      // Protocol distribution chips
+      const protoCounts = {};
+      packets.forEach(p => { protoCounts[p.proto] = (protoCounts[p.proto] || 0) + 1; });
+      const bar = document.getElementById('pkt-proto-bar');
+      bar.innerHTML = Object.entries(protoCounts)
+        .sort((a,b) => b[1]-a[1])
+        .map(([proto, count]) => {
+          const col = PROTO_COLORS[proto] || '#94a3b8';
+          return `<span class="proto-chip" style="background:${col}18;border:1px solid ${col}44;color:${col}">
+            ${proto} <span style="opacity:.7">${count}</span></span>`;
+        }).join('');
+
+      // New rows only
+      const newPkts = packets.filter(p => !_pktSeenNos.has(p.no));
+      if (!newPkts.length) return;
+
+      const empty = document.getElementById('pkt-empty');
+      if (empty) empty.style.display = 'none';
+
+      const tbody = document.getElementById('pkt-tbody');
+      newPkts.forEach(p => {
+        _pktSeenNos.add(p.no);
+        const src  = p.sport ? `${p.src}:${p.sport}` : p.src;
+        const dst  = p.dport ? `${p.dst}:${p.dport}` : p.dst;
+        const cls  = protoClass(p.proto);
+        const tr   = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="color:var(--text3)">${p.no}</td>
+          <td style="color:var(--text2)">${p.ts}</td>
+          <td>${src}</td>
+          <td>${dst}</td>
+          <td class="${cls}" style="font-weight:600">${p.proto}</td>
+          <td style="color:var(--text2)">${p.size}</td>
+          <td style="color:var(--text2);max-width:200px">${p.info || '—'}</td>`;
+        tbody.prepend(tr);
+      });
+
+      // Keep table from growing unbounded
+      while (tbody.rows.length > 200) tbody.deleteRow(tbody.rows.length - 1);
+    }
+
     function highlightPanel(panelId, color) {
       const el = document.getElementById(panelId);
       if (!el) return;

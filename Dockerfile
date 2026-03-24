@@ -23,7 +23,8 @@ RUN pip install --no-cache-dir \
     networkx \
     python-multipart \
     requests \
-    anthropic
+    anthropic \
+    scapy
 
 # ── 4. Copy application files ─────────────────────────────────────────────────
 COPY src/     ./src/
