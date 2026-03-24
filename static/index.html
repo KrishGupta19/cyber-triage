@@ -213,11 +213,29 @@
       gap: 13px;
       position: relative;
       overflow: hidden;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, transform 0.15s;
+      cursor: pointer;
+      user-select: none;
     }
 
     .stat-card:hover {
-      border-color: rgba(255, 255, 255, 0.13);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .stat-card:active {
+      transform: translateY(0);
+    }
+
+    @keyframes panel-flash {
+      0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); border-color: var(--border); }
+      25%  { box-shadow: 0 0 0 3px var(--flash-color, rgba(59,130,246,0.5)); border-color: var(--flash-color, rgba(59,130,246,0.5)); }
+      75%  { box-shadow: 0 0 0 3px var(--flash-color, rgba(59,130,246,0.3)); border-color: var(--flash-color, rgba(59,130,246,0.3)); }
+      100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); border-color: var(--border); }
+    }
+
+    .panel-flash {
+      animation: panel-flash 1.4s ease-out forwards;
     }
 
     .stat-card::before {
@@ -1157,7 +1175,7 @@
     <!-- ROW 1: STAT CARDS -->
     <div class="cards-row">
 
-      <div class="stat-card c-blue">
+      <div class="stat-card c-blue" onclick="highlightPanel('panel-anom', 'rgba(59,130,246,0.5)')">
         <div class="sc-icon i-blue">📊</div>
         <div class="sc-body">
           <div class="sc-lbl">Total Events</div>
@@ -1166,7 +1184,7 @@
         </div>
       </div>
 
-      <div class="stat-card c-orange">
+      <div class="stat-card c-orange" onclick="highlightPanel('panel-triage', 'rgba(249,115,22,0.5)')">
         <div class="sc-icon i-orange">⚠️</div>
         <div class="sc-body">
           <div class="sc-lbl">Anomalies Detected</div>
@@ -1175,7 +1193,7 @@
         </div>
       </div>
 
-      <div class="stat-card c-red">
+      <div class="stat-card c-red" onclick="highlightPanel('panel-triage', 'rgba(239,68,68,0.6)')">
         <div class="sc-icon i-red">🔴</div>
         <div class="sc-body">
           <div class="sc-lbl">High-Risk Incidents</div>
@@ -1184,7 +1202,7 @@
         </div>
       </div>
 
-      <div class="stat-card c-purple">
+      <div class="stat-card c-purple" onclick="highlightPanel('panel-bc', 'rgba(139,92,246,0.5)')">
         <div class="sc-icon i-purple">🔗</div>
         <div class="sc-body">
           <div class="sc-lbl">On Blockchain</div>
@@ -1199,7 +1217,7 @@
     <div class="middle-row">
 
       <!-- Anomaly Detection -->
-      <div class="panel">
+      <div class="panel" id="panel-anom">
         <div class="panel-hdr">
           <div>
             <div class="panel-title">Anomaly Detection</div>
@@ -1231,7 +1249,7 @@
       </div>
 
       <!-- Incident Triage -->
-      <div class="panel">
+      <div class="panel" id="panel-triage">
         <div class="panel-hdr">
           <div>
             <div class="panel-title">Incident Triage</div>
@@ -1283,7 +1301,7 @@
       </div>
 
       <!-- Blockchain Evidence Verification -->
-      <div class="panel">
+      <div class="panel" id="panel-bc">
         <div class="panel-hdr">
           <div>
             <div class="panel-title">Blockchain Evidence Verification</div>
@@ -1665,7 +1683,10 @@
       if (!bcRecords.length) return;
       document.getElementById('bc-empty').style.display = 'none';
 
-      document.getElementById('bc-list').innerHTML = bcRecords.map((r, i) => `
+      document.getElementById('bc-list').innerHTML = bcRecords.map((r, i) => {
+        const reportId = r.report && r.report.metadata && r.report.metadata.report_id
+          ? r.report.metadata.report_id : '';
+        return `
     <div class="bc-item">
       <div class="bc-check">✓</div>
       <div class="bc-info">
@@ -1673,10 +1694,16 @@
         <div class="bc-type">${r.type}</div>
       </div>
       <div class="bc-risk" style="color:${scoreColor(r.score)}">${r.risk}</div>
-      ${r.report
+      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+        ${r.report
           ? `<button class="view-link" onclick="showReport(${i})">View Details →</button>`
           : ''}
-    </div>`).join('');
+        <button class="verify-btn" style="width:auto;padding:3px 8px;font-size:10px;"
+          onclick="verifyHash(this,'${reportId}')">VERIFY</button>
+        <span style="font-size:10px;min-width:70px;"></span>
+      </div>
+    </div>`;
+      }).join('');
     }
 
     // ═══════════════════════════════════════════════
@@ -1719,6 +1746,31 @@
     // ═══════════════════════════════════════════════
     // VERIFY INTEGRITY
     // ═══════════════════════════════════════════════
+    async function verifyHash(btn, reportId) {
+      if (!reportId || reportId === 'undefined') {
+        btn.nextElementSibling.textContent = 'NO REPORT';
+        btn.nextElementSibling.style.color = 'var(--amber)';
+        return;
+      }
+      btn.textContent = '...';
+      try {
+        const res = await fetch(`/api/verify-hash?report_id=${reportId}`, { method: 'POST' });
+        const data = await res.json();
+        const span = btn.nextElementSibling;
+        if (data.verified) {
+          span.textContent = '✓ VERIFIED';
+          span.style.color = 'var(--green)';
+        } else {
+          span.textContent = '✗ FAILED';
+          span.style.color = 'var(--red)';
+        }
+        setTimeout(() => { span.textContent = ''; btn.textContent = 'VERIFY'; }, 3000);
+      } catch (e) {
+        btn.nextElementSibling.textContent = 'ERROR';
+        btn.textContent = 'VERIFY';
+      }
+    }
+
     async function verifyLatest() {
       const btn = document.getElementById('verify-btn');
       if (!lastReport) {
@@ -1843,6 +1895,18 @@
     // ═══════════════════════════════════════════════
     // ACTION BUTTONS
     // ═══════════════════════════════════════════════
+    function highlightPanel(panelId, color) {
+      const el = document.getElementById(panelId);
+      if (!el) return;
+      el.style.setProperty('--flash-color', color);
+      el.classList.remove('panel-flash');
+      // Force reflow so re-clicking the same card restarts the animation
+      void el.offsetWidth;
+      el.classList.add('panel-flash');
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      el.addEventListener('animationend', () => el.classList.remove('panel-flash'), { once: true });
+    }
+
     async function injectTestAttack(btn) {
       const orig = btn.textContent;
       btn.textContent = '⏳ Injecting...';

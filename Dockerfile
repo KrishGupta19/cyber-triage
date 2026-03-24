@@ -22,7 +22,8 @@ RUN pip install --no-cache-dir \
     "uvicorn[standard]" \
     networkx \
     python-multipart \
-    requests
+    requests \
+    anthropic
 
 # ── 4. Copy application files ─────────────────────────────────────────────────
 COPY src/     ./src/

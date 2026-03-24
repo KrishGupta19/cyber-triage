@@ -45,6 +45,7 @@ _KNOWN_SAFE_NAMES  = {
 }
 _model: GNNAutoencoder | None = None
 _optimizer: optim.Optimizer | None = None
+_best_autotrain_loss: float = float('inf')
 
 
 def get_model() -> GNNAutoencoder:
@@ -102,7 +103,7 @@ async def triage_loop():
             model = get_model()
             with torch.no_grad():
                 z, adj_hat, x_hat = model(pyg_data)
-                scores    = get_anomaly_score(pyg_data, adj_hat, x_hat)
+                scores    = get_anomaly_score(pyg_data, adj_hat, x_hat, z)
                 
                 max_score = scores.max().item()
                 loss_val  = compute_loss(pyg_data, adj_hat, x_hat).item()
@@ -252,45 +253,68 @@ async def triage_loop():
 
 # ── Continuous learning loop ──────────────────────────────────────────────────
 async def auto_train_loop():
-    """Periodically fine-tunes the model on recent clean telemetry to adapt to normal system changes."""
+    """Periodically fine-tunes the model on recent clean telemetry."""
+    global _best_autotrain_loss
+    import shutil
+
     while True:
-        await asyncio.sleep(120) # Wake up every 2 minutes
+        await asyncio.sleep(120)
         try:
             path = "data/current_telemetry.json"
             if not os.path.exists(path):
                 continue
-            
+
             with open(path, 'r') as f:
                 telemetry = json.load(f)
-            
-            # Prevent Model Poisoning: Only train if the system is completely clean
+
+            # Guard 1 — anti-poisoning: skip if any process looks elevated
             if any(p.get('anomaly_score', 0.0) > 0.60 for p in telemetry):
-                print("[Auto-Train] System has elevated activity. Skipping training to prevent model poisoning.")
+                print("[Auto-Train] Elevated activity detected — skipping to prevent model poisoning.")
+                continue
+
+            # Guard 2 — minimum graph size: too few nodes produce noisy gradients
+            if len(telemetry) < 8:
+                print(f"[Auto-Train] Too few processes ({len(telemetry)}) — skipping.")
                 continue
 
             graph    = build_process_graph(telemetry)
             pyg_data = convert_to_pyg(graph)
-            
+
             model     = get_model()
             optimizer = get_optimizer()
-            
+
             model.train()
-            for _ in range(5):  # Fine-tune for 5 short epochs
+            for _ in range(5):
                 optimizer.zero_grad()
                 z, adj_hat, x_hat = model(pyg_data)
-                loss = compute_loss(pyg_data, adj_hat, x_hat)
+                loss = compute_loss(pyg_data, adj_hat, x_hat, z)  # use negative-edge loss
                 loss.backward()
                 optimizer.step()
-            
+
             model.eval()
-            torch.save(model.state_dict(), os.path.join(_PROJECT_ROOT, "models", "gnn_baseline.pt"))
-            print(f"[Auto-Train] Model successfully fine-tuned on clean baseline data. New Loss: {loss.item():.4f}")
-            
+            new_loss = loss.item()
+
+            # Guard 3 — only persist if the model actually improved
+            model_path = os.path.join(_PROJECT_ROOT, "models", "gnn_baseline.pt")
+            improved = new_loss < _best_autotrain_loss
+            if improved:
+                # Backup current weights before overwriting
+                backup_path = model_path.replace(".pt", "_backup.pt")
+                if os.path.exists(model_path):
+                    shutil.copy2(model_path, backup_path)
+                torch.save(model.state_dict(), model_path)
+                prev_best = _best_autotrain_loss
+                _best_autotrain_loss = new_loss
+                print(f"[Auto-Train] Improved — loss {new_loss:.4f} (prev best {prev_best:.4f}). Weights saved.")
+            else:
+                print(f"[Auto-Train] No improvement — loss {new_loss:.4f} ≥ best {_best_autotrain_loss:.4f}. Weights NOT overwritten.")
+
             from datetime import datetime
             await broadcast({
                 "type": "auto_train",
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
-                "loss": loss.item()
+                "loss": new_loss,
+                "saved": improved,
             })
         except Exception as e:
             print(f"[Auto-Train] Error: {e}")
@@ -298,6 +322,14 @@ async def auto_train_loop():
 
 @app.on_event("startup")
 async def startup():
+    global _tx_count
+    # Seed tx_count from existing persisted reports so restarts don't reset the counter
+    if os.path.exists("reports"):
+        _tx_count = len([
+            f for f in os.listdir("reports")
+            if f.endswith(".json") and not f.startswith("test_")
+        ])
+        print(f"[Startup] Seeded tx_count={_tx_count} from existing reports")
     asyncio.create_task(triage_loop())
     asyncio.create_task(auto_train_loop())
 
@@ -345,6 +377,7 @@ async def get_anomalies():
 @app.post("/api/inject-test-anomaly")
 async def inject_test_anomaly():
     """Injects a fake crypt0miner.elf process and runs the full detection pipeline."""
+    global _tx_count
     telemetry = collect_processes()
     telemetry.append({
         "pid": 4821, "ppid": 3001,
@@ -357,8 +390,8 @@ async def inject_test_anomaly():
     data     = convert_to_pyg(graph)
     model    = get_model()
     with torch.no_grad():
-        _, adj_hat, x_hat = model(data)
-        scores = get_anomaly_score(data, adj_hat, x_hat)
+        z_inj, adj_hat, x_hat = model(data)
+        scores = get_anomaly_score(data, adj_hat, x_hat, z_inj)
 
     INJECTED_PID = 4821
     node_list    = list(graph.nodes())
@@ -374,6 +407,7 @@ async def inject_test_anomaly():
 
     blockchain = BlockchainClient()
     tx_id, r_hash = blockchain.log_anomaly_event(INJECTED_PID, injected_score, "crypt0miner.elf", report)
+    _tx_count += 1
 
     alert_msg = (
         f"INJECTED: crypt0miner.elf (PID {INJECTED_PID}) "
@@ -427,8 +461,8 @@ async def inject_custom_anomaly(
     data     = convert_to_pyg(graph)
     model    = get_model()
     with torch.no_grad():
-        _, adj_hat, x_hat = model(data)
-        scores = get_anomaly_score(data, adj_hat, x_hat)
+        z_cust, adj_hat, x_hat = model(data)
+        scores = get_anomaly_score(data, adj_hat, x_hat, z_cust)
 
     node_list  = list(graph.nodes())
     pid_to_idx = {p: i for i, p in enumerate(node_list)}
@@ -524,7 +558,6 @@ async def chat_endpoint(chat: ChatMessage):
     except ImportError:
         return {"reply": "Error: 'anthropic' is not installed. Please run: pip install anthropic"}
     
-    # Replace this with your NEWLY generated API key from Anthropic Console
     CLAUDE_API_KEY = "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"
     
     try:
