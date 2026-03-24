@@ -587,7 +587,8 @@ async def chat_endpoint(chat: ChatMessage):
     
     CLAUDE_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
     if not CLAUDE_API_KEY:
-        return {"reply": "⚠ AI Assistant unavailable — the project owner needs to set the ANTHROPIC_API_KEY environment variable before starting the server."}
+        return {"reply": "⚠ AI Assistant unavailable — set your API key first.\n\nRun this in the SAME terminal before starting the server:\n  Windows: set ANTHROPIC_API_KEY=sk-ant-...\n  Linux/Mac: export ANTHROPIC_API_KEY=sk-ant-...\n\nThen start the server in the same terminal: py src/dashboard.py"}
+    print(f"[Chat] API key loaded from: {'ENV VAR' if os.environ.get('ANTHROPIC_API_KEY') else 'unknown'} (starts with: {CLAUDE_API_KEY[:20]}...)")
     
     try:
         client = AsyncAnthropic(api_key=CLAUDE_API_KEY)
