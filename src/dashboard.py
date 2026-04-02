@@ -15,6 +15,13 @@ _PROJECT_ROOT = os.path.dirname(_THIS_DIR)
 os.chdir(_PROJECT_ROOT)
 sys.path.insert(0, _THIS_DIR)
 
+# ── Load .env file if present (keeps API keys out of the terminal) ────────────
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
+except ImportError:
+    pass  # python-dotenv not installed — fall back to environment variables only
+
 import torch
 import torch.nn.functional as F
 import torch.optim as optim

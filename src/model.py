@@ -80,23 +80,17 @@ def compute_loss(data, adj_hat, x_hat, z=None):
 def get_anomaly_score(data, adj_hat, x_hat, z=None):
     """Per-node anomaly score in [0, 1].
 
-    When z is supplied, combines feature reconstruction error (70%) with
-    structural reconstruction error (30%) — how poorly each node's edges
-    reconstruct — giving a richer signal than feature error alone.
-
-    Normalisation:
-      - p95 of combined error → score 0.5  (normal baseline)
-      - 2× p95                → score 1.0  (clearly anomalous)
-      - 95% of clean processes stay ≤ 0.5, well below the 0.75 alert threshold
+    Combines feature reconstruction error (70%) with structural reconstruction
+    error (30%) when edge data is available.  Normalised against the p95 of
+    the current batch so scores are always on a consistent 0–1 scale.
     """
     feat_error = torch.mean((data.x - x_hat) ** 2, dim=1)
 
     if z is not None and data.edge_index.size(1) > 0:
-        # Structural error: per-source-node average of (1 - adj_hat)^2
         src = data.edge_index[0]
         edge_struct_err = (1.0 - adj_hat) ** 2
         node_struct_err = torch.zeros(z.size(0), device=z.device)
-        node_count = torch.zeros(z.size(0), device=z.device)
+        node_count      = torch.zeros(z.size(0), device=z.device)
         node_struct_err.scatter_add_(0, src, edge_struct_err)
         node_count.scatter_add_(0, src, torch.ones_like(edge_struct_err))
         node_struct_err = node_struct_err / node_count.clamp(min=1.0)

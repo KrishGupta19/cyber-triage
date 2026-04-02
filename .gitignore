@@ -22,3 +22,8 @@ data/current_telemetry.json
 
 # Docs
 *.docx
+
+# Local run scripts with API keys — never commit these
+run.bat
+run.sh
+.env

@@ -1,2414 +1,1789 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Decentralized &amp; Behavioural Analytical Cyber Triage Tool</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    /* ─── RESET & ROOT ─── */
-    *,
-    *::before,
-    *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      height: 100%;
-      overflow: hidden;
-    }
-
-    :root {
-      --bg: #0d0f1a;
-      --panel: #141728;
-      --panel2: #1a1d2e;
-      --border: rgba(255, 255, 255, 0.07);
-      --border2: rgba(255, 255, 255, 0.04);
-      --text: #e2e8f0;
-      --text2: #94a3b8;
-      --text3: #3f4a5e;
-      --red: #ef4444;
-      --orange: #f97316;
-      --amber: #f59e0b;
-      --green: #22c55e;
-      --blue: #3b82f6;
-      --indigo: #6366f1;
-      --purple: #8b5cf6;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, sans-serif;
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 2px;
-    }
-
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-    }
-
-    /* ─── HEADER ─── */
-    #header {
-      height: 54px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      z-index: 100;
-    }
-
-    .hdr-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .hdr-icon {
-      width: 34px;
-      height: 34px;
-      background: linear-gradient(135deg, #3b82f6, #6366f1);
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 17px;
-      flex-shrink: 0;
-    }
-
-    .hdr-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: -0.1px;
-      white-space: nowrap;
-    }
-
-    .hdr-subtitle {
-      font-size: 10px;
-      color: var(--text2);
-      margin-top: 1px;
-    }
-
-    .hdr-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .ws-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--text2);
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border);
-      padding: 5px 10px;
-      border-radius: 20px;
-    }
-
-    .ws-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 6px var(--green);
-    }
-
-    .ws-dot.off {
-      background: var(--red);
-      box-shadow: 0 0 6px var(--red);
-      animation: pulse 1s ease infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1
-      }
-
-      50% {
-        opacity: 0.3
-      }
-    }
-
-    .inject-btn {
-      background: linear-gradient(135deg, #f97316, #ef4444);
-      color: white;
-      border: none;
-      padding: 7px 15px;
-      border-radius: 7px;
-      font-family: 'Inter', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      white-space: nowrap;
-      letter-spacing: 0.2px;
-    }
-
-    .inject-btn:hover {
-      opacity: 0.85;
-    }
-
-    .inject-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* ─── MAIN ─── */
-    #main {
-      flex: 1;
-      min-height: 0;
-      padding: 11px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      overflow: hidden;
-    }
-
-    /* ─── STAT CARDS ROW ─── */
-    .cards-row {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .stat-card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      position: relative;
-      overflow: hidden;
-      transition: border-color 0.2s, transform 0.15s;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .stat-card:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .stat-card:active {
-      transform: translateY(0);
-    }
-
-    @keyframes panel-flash {
-      0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); border-color: var(--border); }
-      25%  { box-shadow: 0 0 0 3px var(--flash-color, rgba(59,130,246,0.5)); border-color: var(--flash-color, rgba(59,130,246,0.5)); }
-      75%  { box-shadow: 0 0 0 3px var(--flash-color, rgba(59,130,246,0.3)); border-color: var(--flash-color, rgba(59,130,246,0.3)); }
-      100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); border-color: var(--border); }
-    }
-
-    .panel-flash {
-      animation: panel-flash 1.4s ease-out forwards;
-    }
-
-    /* ─── PACKET CAPTURE PANEL (fixed drawer — only visible when open) ─── */
-    #pkt-panel {
-      position: fixed;
-      bottom: 34px;
-      left: 0;
-      right: 0;
-      z-index: 50;
-      background: var(--panel);
-      border-top: 1px solid rgba(20,184,166,0.4);
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
-      /* hidden by default — only shows when _pktPanelOpen = true */
-      display: none;
-    }
-
-    #pkt-panel.open { display: block; }
-
-    #pkt-hdr {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 16px;
-      cursor: pointer;
-      user-select: none;
-      transition: background .15s;
-    }
-
-    #pkt-hdr:hover { background: var(--panel2); }
-
-    #pkt-body {
-      height: 240px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      border-top: 1px solid var(--border2);
-    }
-
-    #pkt-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-      font-family: 'JetBrains Mono', monospace, monospace;
-    }
-
-    #pkt-table th {
-      position: sticky;
-      top: 0;
-      background: var(--panel2);
-      padding: 4px 8px;
-      text-align: left;
-      font-size: 10px;
-      letter-spacing: .5px;
-      color: var(--text2);
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
-    }
-
-    #pkt-table td {
-      padding: 3px 8px;
-      border-bottom: 1px solid var(--border2);
-      white-space: nowrap;
-      max-width: 220px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    #pkt-table tbody tr:hover { background: rgba(255,255,255,.03); }
-
-    .pkt-HTTP   { color: #38bdf8; }
-    .pkt-HTTPS  { color: #818cf8; }
-    .pkt-DNS    { color: #c084fc; }
-    .pkt-TCP    { color: #34d399; }
-    .pkt-UDP    { color: #22d3ee; }
-    .pkt-ICMP   { color: #fb923c; }
-    .pkt-SSH    { color: #f59e0b; }
-    .pkt-SMB    { color: #f87171; }
-    .pkt-RDP    { color: #f87171; }
-    .pkt-default{ color: var(--text2); }
-
-    .proto-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      padding: 2px 7px;
-      border-radius: 3px;
-      cursor: default;
-    }
-
-    @keyframes pulse {
-      0%,100% { opacity:1; }
-      50%      { opacity:.3; }
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      border-radius: 10px 0 0 10px;
-    }
-
-    .c-blue::before {
-      background: #3b82f6;
-    }
-
-    .c-orange::before {
-      background: #f97316;
-    }
-
-    .c-red::before {
-      background: #ef4444;
-    }
-
-    .c-purple::before {
-      background: #8b5cf6;
-    }
-
-    .c-teal::before {
-      background: #14b8a6;
-    }
-
-    .sc-icon.i-teal {
-      background: rgba(20, 184, 166, 0.13);
-    }
-
-    .v-teal {
-      color: #14b8a6;
-    }
-
-    .sc-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-
-    .sc-icon.i-blue {
-      background: rgba(59, 130, 246, 0.13);
-    }
-
-    .sc-icon.i-orange {
-      background: rgba(249, 115, 22, 0.13);
-    }
-
-    .sc-icon.i-red {
-      background: rgba(239, 68, 68, 0.13);
-    }
-
-    .sc-icon.i-purple {
-      background: rgba(139, 92, 246, 0.13);
-    }
-
-    .sc-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .sc-lbl {
-      font-size: 10px;
-      font-weight: 500;
-      color: var(--text2);
-      margin-bottom: 3px;
-      letter-spacing: 0.2px;
-    }
-
-    .sc-val {
-      font-size: 26px;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .v-blue {
-      color: #60a5fa;
-    }
-
-    .v-orange {
-      color: #fb923c;
-    }
-
-    .v-red {
-      color: #f87171;
-    }
-
-    .v-purple {
-      color: #a78bfa;
-    }
-
-    .sc-delta {
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 4px;
-      margin-top: 5px;
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-
-    .d-up {
-      background: rgba(34, 197, 94, 0.12);
-      color: #4ade80;
-    }
-
-    .d-zero {
-      background: rgba(148, 163, 184, 0.08);
-      color: var(--text2);
-    }
-
-    /* ─── GRID ROWS ─── */
-    .middle-row {
-      display: grid;
-      grid-template-columns: 6fr 4fr;
-      gap: 10px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .bottom-row {
-      display: grid;
-      grid-template-columns: 35fr 35fr 30fr;
-      gap: 10px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    /* ─── PANEL BASE ─── */
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-height: 0;
-    }
-
-    .panel-hdr {
-      padding: 11px 16px 10px;
-      border-bottom: 1px solid var(--border2);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-
-    .panel-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: 0.1px;
-    }
-
-    .panel-sub {
-      font-size: 10px;
-      color: var(--text2);
-      margin-top: 2px;
-    }
-
-    .panel-body {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-      position: relative;
-    }
-
-    /* ─── BADGE ─── */
-    .badge {
-      font-size: 9px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 4px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      white-space: nowrap;
-    }
-
-    .b-high {
-      background: rgba(239, 68, 68, 0.14);
-      color: #f87171;
-    }
-
-    .b-orange {
-      background: rgba(249, 115, 22, 0.14);
-      color: #fb923c;
-    }
-
-    .b-medium {
-      background: rgba(245, 158, 11, 0.14);
-      color: #fbbf24;
-    }
-
-    .b-low {
-      background: rgba(34, 197, 94, 0.12);
-      color: #4ade80;
-    }
-
-    .b-blue {
-      background: rgba(59, 130, 246, 0.12);
-      color: #93c5fd;
-    }
-
-    .b-purple {
-      background: rgba(139, 92, 246, 0.12);
-      color: #c4b5fd;
-    }
-
-    /* ─── DATA TABLE ─── */
-    .dt {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-    }
-
-    .dt th {
-      padding: 8px 14px;
-      text-align: left;
-      color: var(--text2);
-      font-weight: 500;
-      font-size: 10px;
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border2);
-      position: sticky;
-      top: 0;
-      background: var(--panel);
-      z-index: 2;
-    }
-
-    .dt td {
-      padding: 9px 14px;
-      border-bottom: 1px solid var(--border2);
-      color: var(--text);
-      vertical-align: middle;
-    }
-
-    .dt tr:last-child td {
-      border-bottom: none;
-    }
-
-    .dt tbody tr:hover td {
-      background: rgba(255, 255, 255, 0.022);
-    }
-
-    .proc-name {
-      font-weight: 500;
-      color: var(--text);
-    }
-
-    .meta-text {
-      color: var(--text2);
-      font-size: 10px;
-    }
-
-    .score-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .score-bar-bg {
-      width: 52px;
-      height: 3px;
-      background: rgba(255, 255, 255, 0.07);
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-
-    .score-bar-fg {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.4s;
-    }
-
-    /* ─── VIEW ALL BAR ─── */
-    .view-all-wrap {
-      padding: 9px 14px;
-      border-top: 1px solid var(--border2);
-      flex-shrink: 0;
-    }
-
-    .view-all-btn {
-      width: 100%;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border);
-      color: var(--text2);
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 7px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .view-all-btn:hover {
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--text);
-    }
-
-    /* ─── TIMELINE ─── */
-    .tl-wrap {
-      padding: 8px 14px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tl-item {
-      display: flex;
-      gap: 11px;
-      padding: 9px 0;
-      border-bottom: 1px solid var(--border2);
-    }
-
-    .tl-item:last-child {
-      border-bottom: none;
-    }
-
-    .tl-left {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex-shrink: 0;
-      padding-top: 3px;
-    }
-
-    .tl-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .tl-line {
-      width: 1px;
-      flex: 1;
-      background: var(--border2);
-      margin-top: 4px;
-      min-height: 8px;
-    }
-
-    .tl-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .tl-ts {
-      font-size: 10px;
-      color: var(--text2);
-      margin-bottom: 2px;
-    }
-
-    .tl-desc {
-      font-size: 11px;
-      color: var(--text);
-      line-height: 1.4;
-      word-break: break-word;
-    }
-
-    /* ─── BLOCKCHAIN PANEL ─── */
-    .bc-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border2);
-    }
-
-    .bc-item:last-child {
-      border-bottom: none;
-    }
-
-    .bc-check {
-      color: var(--green);
-      font-size: 15px;
-      flex-shrink: 0;
-    }
-
-    .bc-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .bc-id {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .bc-type {
-      font-size: 10px;
-      color: var(--text2);
-      margin-top: 1px;
-    }
-
-    .bc-risk {
-      font-size: 12px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .view-link {
-      font-size: 10px;
-      color: var(--blue);
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      padding: 0;
-      flex-shrink: 0;
-    }
-
-    .view-link:hover {
-      text-decoration: underline;
-    }
-
-    .bc-footer {
-      padding: 9px 14px;
-      border-top: 1px solid var(--border2);
-      flex-shrink: 0;
-    }
-
-    .verify-btn {
-      width: 100%;
-      background: rgba(34, 197, 94, 0.1);
-      border: 1px solid rgba(34, 197, 94, 0.22);
-      color: var(--green);
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 7px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .verify-btn:hover {
-      background: rgba(34, 197, 94, 0.18);
-    }
-
-    .verify-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    /* ─── RIGHT COLUMN ─── */
-    .right-col {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 0;
-    }
-
-    .sys-panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 13px 16px;
-      flex-shrink: 0;
-    }
-
-    .sys-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 10px;
-    }
-
-    .sys-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 0;
-      border-bottom: 1px solid var(--border2);
-      font-size: 11px;
-    }
-
-    .sys-row:last-child {
-      border-bottom: none;
-    }
-
-    .sys-key {
-      color: var(--text2);
-    }
-
-    .sys-val {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: var(--green);
-      font-weight: 500;
-      font-size: 11px;
-    }
-
-    .sys-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 5px var(--green);
-    }
-
-    /* ─── FOOTER ─── */
-    #footer {
-      height: 34px;
-      flex-shrink: 0;
-      background: var(--panel);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 14px;
-    }
-
-    .ftr-indicators {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 10px;
-      color: var(--text2);
-    }
-
-    .ftr-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 4px var(--green);
-    }
-
-    .ftr-sep {
-      color: var(--text3);
-      font-size: 11px;
-    }
-
-    .ftr-label {
-      font-weight: 600;
-      font-size: 10px;
-      color: var(--text2);
-    }
-
-    .ftr-feed {
-      flex: 1;
-      font-size: 10px;
-      color: var(--text2);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .ftr-live {
-      color: var(--blue);
-      font-weight: 600;
-      margin-right: 6px;
-    }
-
-    .clear-btn {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: var(--text2);
-      font-family: 'Inter', sans-serif;
-      font-size: 10px;
-      padding: 4px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all 0.18s;
-      white-space: nowrap;
-    }
-
-    .clear-btn:hover {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text);
-    }
-
-    /* ─── EMPTY / CONNECTING STATES ─── */
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 28px 20px;
-      gap: 7px;
-      color: var(--text3);
-      font-size: 11px;
-      text-align: center;
-      height: 100%;
-    }
-
-    .empty-icon {
-      font-size: 26px;
-      opacity: 0.35;
-    }
-
-    .spinner-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 22px;
-      color: var(--text2);
-      font-size: 11px;
-    }
-
-    .spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-top-color: var(--blue);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    /* ─── MODALS ─── */
-    #report-modal,
-    #model-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 1000;
-      background: rgba(0, 0, 0, 0.72);
-      align-items: center;
-      justify-content: center;
-    }
-
-    #report-modal.open,
-    #model-modal.open {
-      display: flex;
-    }
-
-    .modal-box {
-      background: var(--panel2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      width: 620px;
-      max-height: 75vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-hdr {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-
-    .modal-title {
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      color: var(--text2);
-      font-size: 18px;
-      cursor: pointer;
-      line-height: 1;
-      transition: color 0.2s;
-    }
-
-    .modal-close:hover {
-      color: var(--text);
-    }
-
-    .modal-body {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 18px;
-    }
-
-    .modal-body pre {
-      font-family: 'Courier New', monospace;
-      font-size: 11px;
-      color: rgba(226, 232, 240, 0.75);
-      line-height: 1.7;
-      white-space: pre-wrap;
-      word-break: break-all;
-    }
-
-    .modal-body .jk {
-      color: #60a5fa;
-    }
-
-    .modal-body .jv {
-      color: #86efac;
-    }
-
-    .modal-body .jn {
-      color: #fbbf24;
-    }
-
-    /* ─── CHATBOT WIDGET ─── */
-    .chat-hdr-btn {
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      color: #93c5fd;
-      padding: 6px 12px;
-      border-radius: 7px;
-      font-family: 'Inter', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .chat-hdr-btn:hover {
-      background: rgba(59, 130, 246, 0.2);
-      color: white;
-    }
-
-    .chat-window {
-      position: fixed;
-      bottom: 80px;
-      right: 20px;
-      width: 320px;
-      height: 450px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      display: none;
-      flex-direction: column;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-      z-index: 9998;
-      overflow: hidden;
-    }
-
-    .chat-window.open {
-      display: flex;
-    }
-
-    .chat-header {
-      background: var(--panel2);
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .chat-close {
-      background: none;
-      border: none;
-      color: var(--text2);
-      cursor: pointer;
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .chat-messages {
-      flex: 1;
-      padding: 16px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .chat-msg {
-      max-width: 85%;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-
-    .msg-ai {
-      background: rgba(59, 130, 246, 0.15);
-      color: var(--text);
-      align-self: flex-start;
-      border-bottom-left-radius: 0;
-    }
-
-    .tts-stop-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin-top: 8px;
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.25);
-      color: rgba(239,68,68,0.75);
-      font-size: 10px;
-      font-family: 'Inter', sans-serif;
-      padding: 3px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tts-stop-btn:hover {
-      background: rgba(239,68,68,0.2);
-      color: #f87171;
-      border-color: rgba(239,68,68,0.5);
-    }
-    .tts-stop-btn.done {
-      opacity: 0.35;
-      cursor: default;
-      pointer-events: none;
-    }
-
-    .msg-user {
-      background: rgba(34, 197, 94, 0.15);
-      color: var(--text);
-      align-self: flex-end;
-      border-bottom-right-radius: 0;
-    }
-
-    .chat-input {
-      display: flex;
-      padding: 12px;
-      border-top: 1px solid var(--border);
-      background: var(--panel2);
-      gap: 8px;
-    }
-
-    .chat-input input {
-      flex: 1;
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 12px;
-      border-radius: 6px;
-      outline: none;
-      font-family: inherit;
-      font-size: 12px;
-    }
-
-    .chat-input button {
-      background: var(--blue);
-      color: white;
-      border: none;
-      padding: 0 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 12px;
-      transition: background 0.2s;
-    }
-
-    .chat-input button:hover {
-      background: #2563eb;
-    }
-
-    .chat-input button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    #chat-mic-btn {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text2);
-      border: 1px solid var(--border);
-      padding: 0 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s;
-    }
-
-    #chat-mic-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-    }
-
-    #chat-mic-btn.recording {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--red);
-      border-color: rgba(239, 68, 68, 0.5);
-      animation: pulse-mic 1.5s infinite;
-    }
-
-    @keyframes pulse-mic {
-      0% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-      }
-
-      70% {
-        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
-      }
-
-      100% {
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Triage Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET & ROOT ─── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+:root {
+  --bg:      #0d0f1a;
+  --panel:   #141728;
+  --panel2:  #1a1d2e;
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.04);
+  --text:    #e2e8f0;
+  --text2:   #94a3b8;
+  --text3:   #3f4a5e;
+  --red:     #ef4444;
+  --orange:  #f97316;
+  --amber:   #f59e0b;
+  --green:   #22c55e;
+  --blue:    #3b82f6;
+  --purple:  #8b5cf6;
+  --cyan:    #22d3ee;
+  --teal:    #14b8a6;
+}
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Inter', system-ui, sans-serif;
+  font-size:13px; display:flex; flex-direction:column; height:100vh;
+}
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:2px; }
+* { scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.1) transparent; }
+
+/* ─── HEADER ─── */
+#header {
+  height:54px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 20px;
+  background:var(--panel); border-bottom:1px solid var(--border); z-index:100;
+}
+.hdr-left  { display:flex; align-items:center; gap:12px; }
+.hdr-icon  {
+  width:34px; height:34px;
+  background:linear-gradient(135deg,#3b82f6,#6366f1);
+  border-radius:9px; display:flex; align-items:center;
+  justify-content:center; font-size:17px; flex-shrink:0;
+}
+.hdr-title    { font-size:14px; font-weight:600; color:var(--text); letter-spacing:-0.1px; }
+.hdr-subtitle { font-size:10px; color:var(--text2); margin-top:1px; }
+.hdr-right    { display:flex; align-items:center; gap:10px; }
+
+.ws-pill {
+  display:flex; align-items:center; gap:6px;
+  font-size:10px; font-weight:500; color:var(--text2);
+  background:rgba(255,255,255,0.04); border:1px solid var(--border);
+  padding:5px 10px; border-radius:20px;
+}
+.ws-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); }
+.ws-dot.off { background:var(--red); box-shadow:0 0 6px var(--red); animation:blink 1s ease infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.chat-hdr-btn {
+  background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3);
+  color:#93c5fd; padding:6px 12px; border-radius:7px;
+  font-family:inherit; font-size:11px; font-weight:600;
+  cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:6px;
+}
+.chat-hdr-btn:hover { background:rgba(59,130,246,0.22); color:white; }
+
+.inject-btn {
+  background:linear-gradient(135deg,#f97316,#ef4444);
+  color:white; border:none; padding:7px 15px; border-radius:7px;
+  font-family:inherit; font-size:12px; font-weight:600;
+  cursor:pointer; transition:opacity 0.2s; white-space:nowrap;
+}
+.inject-btn:hover    { opacity:0.85; }
+.inject-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+/* ─── ALERT STRIP ─── */
+#alert-strip {
+  height:24px; flex-shrink:0; display:flex; align-items:center;
+  background:rgba(239,68,68,0.07); border-bottom:1px solid rgba(239,68,68,0.18);
+  overflow:hidden; pointer-events:none;
+}
+.alert-tag {
+  flex-shrink:0; background:var(--red); color:#fff; font-weight:700;
+  font-size:9px; letter-spacing:2px; padding:0 10px;
+  height:100%; display:flex; align-items:center; margin-right:12px;
+}
+.alert-text {
+  font-size:10px; color:#f87171; white-space:nowrap;
+  animation:ticker 60s linear infinite; letter-spacing:.5px;
+}
+@keyframes ticker { from{transform:translateX(100vw)} to{transform:translateX(-100%)} }
+
+/* ─── TAB BAR ─── */
+#tab-bar {
+  flex-shrink:0; height:42px; display:flex; align-items:stretch;
+  background:var(--panel2); border-bottom:1px solid var(--border);
+}
+.tab-btn {
+  flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+  background:transparent; border:none; border-bottom:2px solid transparent;
+  cursor:pointer; font-family:inherit; font-size:11px; font-weight:500;
+  color:var(--text2); transition:all 0.2s; position:relative; top:1px;
+  white-space:nowrap; padding:0 8px;
+}
+.tab-btn:hover  { color:var(--text); background:rgba(255,255,255,0.03); }
+.tab-btn.active { color:var(--blue); border-bottom-color:var(--blue); }
+.tab-icon { font-size:13px; }
+
+/* ─── TAB CONTENT ─── */
+#tab-content { flex:1; position:relative; overflow:hidden; }
+.tab-pane {
+  position:absolute; inset:0; opacity:0; pointer-events:none;
+  transition:opacity 0.2s; overflow:hidden;
+}
+.tab-pane.active { opacity:1; pointer-events:all; }
+
+/* ─── SHARED COMPONENTS ─── */
+.panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; display:flex; flex-direction:column;
+  overflow:hidden; min-height:0;
+}
+.panel-hdr {
+  padding:11px 16px 10px; border-bottom:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.panel-title { font-size:12px; font-weight:600; color:var(--text); }
+.panel-sub   { font-size:10px; color:var(--text2); margin-top:2px; }
+.panel-body  { flex:1; overflow-y:auto; min-height:0; position:relative; }
+
+.badge {
+  font-size:9px; font-weight:700; padding:2px 8px; border-radius:4px;
+  letter-spacing:.5px; text-transform:uppercase; white-space:nowrap;
+}
+.b-blue   { background:rgba(59,130,246,0.12);  color:#93c5fd; }
+.b-red    { background:rgba(239,68,68,0.14);   color:#f87171; }
+.b-orange { background:rgba(249,115,22,0.14);  color:#fb923c; }
+.b-amber  { background:rgba(245,158,11,0.14);  color:#fbbf24; }
+.b-green  { background:rgba(34,197,94,0.12);   color:#4ade80; }
+.b-purple { background:rgba(139,92,246,0.12);  color:#c4b5fd; }
+
+.dt { width:100%; border-collapse:collapse; font-size:11px; }
+.dt th {
+  padding:8px 14px; text-align:left; color:var(--text2);
+  font-weight:500; font-size:10px; letter-spacing:.4px; text-transform:uppercase;
+  border-bottom:1px solid var(--border2);
+  position:sticky; top:0; background:var(--panel); z-index:2;
+}
+.dt td { padding:9px 14px; border-bottom:1px solid var(--border2); color:var(--text); vertical-align:middle; }
+.dt tr:last-child td { border-bottom:none; }
+.dt tbody tr:hover td { background:rgba(255,255,255,0.022); }
+
+.status-pill { display:inline-block; padding:2px 8px; border-radius:4px; font-size:9px; letter-spacing:1px; font-weight:700; }
+.pill-critical { background:rgba(239,68,68,0.14); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+.pill-warning  { background:rgba(245,158,11,0.14); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.pill-normal   { background:rgba(34,197,94,0.12);  color:#4ade80; border:1px solid rgba(34,197,94,0.25); }
+
+.score-cell { display:flex; align-items:center; gap:8px; }
+.score-bar-bg { width:52px; height:3px; background:rgba(255,255,255,0.07); border-radius:2px; flex-shrink:0; }
+.score-bar-fg { height:100%; border-radius:2px; transition:width 0.4s; }
+
+.empty-state {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; gap:8px; color:var(--text3); font-size:12px; text-align:center; padding:20px;
+}
+.empty-icon { font-size:28px; opacity:0.4; }
+
+/* ══════════════════════════════════════════
+   TAB 1 — OVERVIEW
+══════════════════════════════════════════ */
+#tab-overview {
+  display:flex; flex-direction:column; padding:20px 24px; gap:16px; overflow-y:auto;
+}
+.ov-cards { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; flex-shrink:0; }
+.ov-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:10px;
+  padding:20px 18px; position:relative; overflow:hidden;
+  transition:border-color 0.2s, transform 0.15s;
+}
+.ov-card:hover { border-color:rgba(255,255,255,0.15); transform:translateY(-1px); }
+.ov-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.ov-card.c-cyan::before   { background:linear-gradient(90deg,var(--cyan),transparent); }
+.ov-card.c-red::before    { background:linear-gradient(90deg,var(--red),transparent); }
+.ov-card.c-green::before  { background:linear-gradient(90deg,var(--green),transparent); }
+.ov-card.c-amber::before  { background:linear-gradient(90deg,var(--amber),transparent); }
+.ov-card.c-orange::before { background:linear-gradient(90deg,var(--orange),transparent); }
+.oc-lbl { font-size:10px; font-weight:500; color:var(--text2); display:block; margin-bottom:8px; }
+.oc-val { font-size:32px; font-weight:700; line-height:1; display:block; margin-bottom:8px; }
+.oc-sub { font-size:10px; color:var(--text3); }
+.c-cyan  .oc-val { color:var(--cyan); }
+.c-red   .oc-val { color:#f87171; }
+.c-green .oc-val { color:#4ade80; }
+.c-amber .oc-val { color:#fbbf24; }
+.c-orange.oc-val { color:#fb923c; }
+.c-orange > .oc-val { color:#fb923c; }
+
+.ov-bottom { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; flex:1; min-height:180px; }
+.ov-panel {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:10px; display:flex; flex-direction:column; overflow:hidden;
+}
+.ov-panel-hdr {
+  padding:11px 16px 10px; border-bottom:1px solid var(--border2);
+  flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+}
+.ov-panel-hdr-title { font-size:11px; font-weight:600; color:var(--text); }
+.ov-panel-body { flex:1; overflow-y:auto; padding:10px 16px; }
+
+.sys-status-big {
+  font-size:17px; font-weight:700; letter-spacing:3px;
+  text-align:center; padding:14px 0 10px;
+}
+.sys-status-big.ok     { color:#4ade80; }
+.sys-status-big.threat { color:#f87171; }
+.sys-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:7px 0; border-bottom:1px solid var(--border2); font-size:11px;
+}
+.sys-row .sk { color:var(--text2); font-size:10px; }
+.sys-row .sv { color:var(--blue); font-weight:600; }
+.alert-item {
+  padding:8px 0; border-bottom:1px solid var(--border2);
+  cursor:pointer; border-radius:6px; transition:background 0.15s;
+}
+.alert-item:last-child { border-bottom:none; }
+.alert-item:hover { background:rgba(255,255,255,0.04); padding-left:6px; }
+.ai-time { color:var(--text3); font-size:9px; }
+.ai-msg  { font-size:11px; margin-top:3px; line-height:1.45; }
+
+/* ─── ALERT DETAIL MODAL ─── */
+#alert-modal-backdrop {
+  display:none; position:fixed; inset:0; z-index:9990;
+  background:rgba(0,0,0,0.6); backdrop-filter:blur(3px);
+}
+#alert-modal-backdrop.open { display:flex; align-items:center; justify-content:center; }
+#alert-modal {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:12px; width:460px; max-width:90vw;
+  box-shadow:0 16px 48px rgba(0,0,0,0.8);
+  animation:modalIn 0.18s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+.amd-header {
+  padding:16px 20px 14px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.amd-title  { font-size:13px; font-weight:600; color:var(--text); }
+.amd-close  {
+  background:none; border:none; color:var(--text2);
+  font-size:18px; cursor:pointer; line-height:1; padding:0 4px;
+}
+.amd-close:hover { color:var(--text); }
+.amd-body   { padding:18px 20px; display:flex; flex-direction:column; gap:10px; }
+.amd-row    {
+  display:flex; justify-content:space-between; align-items:flex-start;
+  padding:8px 0; border-bottom:1px solid var(--border2); font-size:12px;
+}
+.amd-row:last-child { border-bottom:none; }
+.amd-lbl    { color:var(--text2); font-size:10px; text-transform:uppercase; letter-spacing:.5px; flex-shrink:0; width:120px; }
+.amd-val    { color:var(--text); font-weight:500; text-align:right; word-break:break-all; }
+.amd-severity {
+  display:inline-block; padding:3px 10px; border-radius:5px;
+  font-size:10px; font-weight:700; letter-spacing:.5px;
+}
+.sev-critical { background:rgba(239,68,68,0.14); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+.sev-warning  { background:rgba(245,158,11,0.14); color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+.mm-metric { padding:10px 0; border-bottom:1px solid var(--border2); }
+.mm-metric:last-child { border-bottom:none; }
+.mm-lbl { font-size:9px; letter-spacing:1px; color:var(--text2); margin-bottom:5px; text-transform:uppercase; }
+.mm-val { font-size:18px; font-weight:700; }
+.mm-bar-bg { height:3px; background:rgba(255,255,255,0.07); border-radius:2px; margin-top:6px; }
+.mm-bar-fill { height:100%; border-radius:2px; transition:width 0.4s; }
+
+/* ══════════════════════════════════════════
+   TAB 2 — PROCESS GRAPH
+══════════════════════════════════════════ */
+#tab-graph { display:grid; grid-template-columns:260px 1fr 240px; height:100%; }
+.pg-left {
+  background:var(--panel); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pg-left-hdr { padding:14px 16px 10px; border-bottom:1px solid var(--border2); flex-shrink:0; }
+.pg-hint { margin-top:6px; font-size:10px; color:var(--text3); }
+.pg-anom-badge {
+  margin-top:6px; font-size:9px; font-weight:700; padding:2px 8px; border-radius:4px;
+  background:rgba(239,68,68,0.12); color:#f87171; display:inline-block;
+}
+.pg-proc-scroll { flex:1; overflow-y:auto; }
+.pg-proc-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; border-bottom:1px solid var(--border2);
+  cursor:pointer; transition:background 0.15s; font-size:11px;
+}
+.pg-proc-item:hover         { background:rgba(255,255,255,0.04); }
+.pg-proc-item.pg-anom       { background:rgba(239,68,68,0.05); }
+.pg-proc-item.pg-anom:hover { background:rgba(239,68,68,0.1); }
+.pg-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.pg-info { flex:1; overflow:hidden; }
+.pg-name { font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pg-meta { font-size:9px; color:var(--text2); margin-top:2px; }
+.pg-score{ font-weight:600; font-size:11px; flex-shrink:0; }
+
+.pg-center { position:relative; overflow:hidden; background:rgba(0,0,0,0.2); }
+#graph-canvas { position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; display:block; }
+.graph-hud { position:absolute; top:16px; left:16px; display:flex; flex-direction:column; gap:4px; }
+.hud-item {
+  font-size:10px; color:var(--text2); background:rgba(0,0,0,0.6);
+  padding:3px 10px; border:1px solid var(--border); border-radius:4px;
+}
+.graph-legend { position:absolute; bottom:16px; left:16px; display:flex; gap:16px; }
+.gl-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--text2); }
+.gl-dot  { width:8px; height:8px; border-radius:50%; }
+
+.pg-right {
+  background:var(--panel); border-left:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pg-right-hdr { padding:14px 16px 10px; border-bottom:1px solid var(--border2); flex-shrink:0; }
+.pg-right-body { flex:1; padding:16px; overflow-y:auto; }
+.nd-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; gap:10px; color:var(--text3); text-align:center; font-size:11px;
+}
+.nd-empty-icon { font-size:30px; opacity:0.3; margin-bottom:4px; }
+.nd-field { padding:12px 0; border-bottom:1px solid var(--border2); }
+.nd-field:last-child { border-bottom:none; }
+.nd-lbl { font-size:9px; letter-spacing:1px; color:var(--text2); margin-bottom:5px; text-transform:uppercase; }
+.nd-val { font-size:15px; font-weight:600; }
+.nd-bar { height:3px; border-radius:2px; margin-top:7px; transition:width 0.3s; }
+
+/* ══════════════════════════════════════════
+   TAB 3 — ANOMALY DETECTION
+══════════════════════════════════════════ */
+#tab-anomaly { display:flex; flex-direction:column; padding:20px 24px; gap:16px; overflow:hidden; }
+.ad-chart-section {
+  flex:0 0 42%; display:flex; flex-direction:column;
+  background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden;
+}
+.ad-chart-hdr {
+  padding:12px 18px 10px; border-bottom:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.ad-chart-wrap { flex:1; min-height:0; padding:14px 18px; position:relative; }
+.ad-table-section {
+  flex:1; min-height:0; display:flex; flex-direction:column;
+  background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden;
+}
+.ad-table-hdr {
+  padding:12px 18px 10px; border-bottom:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+}
+.ad-table-scroll { flex:1; overflow-y:auto; }
+.ad-table { width:100%; border-collapse:collapse; font-size:11px; }
+.ad-table th {
+  padding:9px 16px; text-align:left; font-size:9px; letter-spacing:1px; text-transform:uppercase;
+  color:var(--text2); border-bottom:1px solid var(--border2);
+  position:sticky; top:0; background:var(--panel); font-weight:500;
+}
+.ad-table td { padding:9px 16px; border-bottom:1px solid var(--border2); }
+.ad-table tr:hover td { background:rgba(255,255,255,0.02); }
+.row-critical td { background:rgba(239,68,68,0.04) !important; }
+.row-warning  td { background:rgba(245,158,11,0.03) !important; }
+
+/* ══════════════════════════════════════════
+   TAB 4 — BLOCKCHAIN
+══════════════════════════════════════════ */
+#tab-blockchain { display:grid; grid-template-columns:300px 1fr; height:100%; overflow:hidden; }
+.bc-left {
+  background:var(--panel); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.bc-net { padding:18px 18px 0; flex-shrink:0; }
+.bc-net-title { font-size:11px; font-weight:600; color:var(--text); margin-bottom:12px; }
+.net-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0; border-bottom:1px solid var(--border2); font-size:11px;
+}
+.net-row:last-child { border-bottom:none; }
+.nk { color:var(--text2); font-size:10px; }
+.nv { color:var(--blue); font-weight:600; }
+.nv.green  { color:#4ade80; }
+.nv.purple { color:#c4b5fd; }
+.bc-lat { flex:1; min-height:0; display:flex; flex-direction:column; padding:16px 18px; }
+.bc-lat-title { font-size:10px; font-weight:500; color:var(--text2); margin-bottom:10px; flex-shrink:0; text-transform:uppercase; letter-spacing:.5px; }
+.bc-lat-wrap { flex:1; min-height:0; }
+
+.bc-right { display:flex; flex-direction:column; overflow:hidden; }
+.bc-right-hdr {
+  padding:14px 22px 12px; border-bottom:1px solid var(--border);
+  flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+  background:var(--panel2);
+}
+.bc-log-scroll { flex:1; overflow-y:auto; padding:14px 22px; display:flex; flex-direction:column; gap:8px; }
+.bc-block {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:8px; padding:12px 14px; position:relative; overflow:hidden;
+  transition:border-color .2s; animation:bcSlide .3s ease;
+}
+.bc-block::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:8px 0 0 8px; }
+.bc-block.anom-blk::before { background:var(--red); }
+.bc-block.norm-blk::before { background:var(--green); }
+.bc-block:hover { border-color:rgba(255,255,255,0.15); }
+@keyframes bcSlide { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+.bc-blk-top  { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
+.bc-blk-num  { color:var(--blue); font-weight:700; font-size:12px; }
+.bc-blk-time { color:var(--text2); font-size:10px; }
+.bc-blk-hash { font-size:9px; color:var(--text3); margin-bottom:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bc-blk-row  { display:flex; justify-content:space-between; align-items:center; font-size:11px; }
+.bc-blk-proc { color:#fbbf24; }
+.bc-blk-score{ font-weight:700; }
+.bc-blk-tag  { margin-top:5px; font-size:9px; }
+
+/* ══════════════════════════════════════════
+   TAB 5 — FORENSIC REPORT
+══════════════════════════════════════════ */
+#tab-forensic { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+.fr-topbar {
+  flex-shrink:0; background:var(--panel2); border-bottom:1px solid var(--border);
+  padding:12px 24px; display:flex; align-items:center; justify-content:space-between; gap:20px;
+}
+.fr-meta { display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; }
+.fr-meta-item .fm-lbl { color:var(--text2); font-size:9px; letter-spacing:1px; text-transform:uppercase; display:block; margin-bottom:3px; }
+.fr-meta-item .fm-val { color:var(--blue); font-weight:600; font-size:11px; }
+.fr-actions { display:flex; gap:10px; flex-shrink:0; }
+.fr-btn {
+  background:rgba(255,255,255,0.05); border:1px solid var(--border);
+  color:var(--text2); padding:6px 14px; border-radius:6px;
+  cursor:pointer; font-family:inherit; font-size:11px; font-weight:500;
+  transition:all 0.2s;
+}
+.fr-btn:hover { background:rgba(255,255,255,0.09); color:var(--text); }
+.fr-status { font-size:11px; font-weight:600; padding:4px 10px; border-radius:6px; }
+.fr-report-area { flex:1; overflow:auto; padding:20px 24px; }
+.fr-empty {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:100%; gap:10px; color:var(--text3); font-size:12px; text-align:center;
+}
+.fr-empty-icon { font-size:32px; opacity:0.3; }
+#report-json {
+  background:var(--panel2); border:1px solid var(--border);
+  border-radius:8px; padding:16px 20px;
+  font-size:11px; line-height:1.6; white-space:pre-wrap;
+  font-family:'Courier New', monospace; color:var(--text);
+}
+#report-json .key  { color:#93c5fd; }
+#report-json .str  { color:#4ade80; }
+#report-json .num  { color:#fbbf24; }
+#report-json .bool { color:#fb923c; }
+
+/* ══════════════════════════════════════════
+   TAB 6 — PACKET SNIFFER
+══════════════════════════════════════════ */
+#tab-sniffer { display:flex; flex-direction:column; height:100%; overflow:hidden; }
+
+.pkt-topbar {
+  flex-shrink:0; background:var(--panel2); border-bottom:1px solid var(--border);
+  padding:10px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+.pkt-stat {
+  display:flex; align-items:center; gap:6px;
+  font-size:11px; color:var(--text2);
+  background:rgba(255,255,255,0.04); border:1px solid var(--border);
+  padding:5px 12px; border-radius:6px;
+}
+.pkt-stat .pkt-val { font-weight:700; color:var(--text); }
+.pkt-live-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--red); box-shadow:0 0 6px var(--red);
+  animation:blink 1s ease infinite; flex-shrink:0;
+}
+.pkt-proto-bar {
+  display:flex; gap:6px; flex-wrap:wrap; flex:1;
+}
+.proto-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:10px; padding:2px 8px; border-radius:4px;
+  font-weight:600; white-space:nowrap;
+}
+
+.pkt-body { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.pkt-table-wrap { flex:1; overflow:auto; }
+
+#pkt-table {
+  width:100%; border-collapse:collapse;
+  font-size:11px; font-family:'Courier New', monospace;
+}
+#pkt-table th {
+  position:sticky; top:0; background:var(--panel2);
+  padding:7px 12px; text-align:left;
+  font-size:10px; letter-spacing:.5px; color:var(--text2);
+  border-bottom:1px solid var(--border); font-weight:600;
+  font-family:'Inter', sans-serif; text-transform:uppercase;
+}
+#pkt-table td {
+  padding:5px 12px; border-bottom:1px solid var(--border2);
+  white-space:nowrap; max-width:220px;
+  overflow:hidden; text-overflow:ellipsis;
+}
+#pkt-table tbody tr:hover { background:rgba(255,255,255,.03); cursor:default; }
+
+.pkt-HTTP    { color:#38bdf8; }
+.pkt-HTTPS   { color:#818cf8; }
+.pkt-DNS     { color:#c084fc; }
+.pkt-TCP     { color:#34d399; }
+.pkt-UDP     { color:#22d3ee; }
+.pkt-ICMP    { color:#fb923c; }
+.pkt-SSH     { color:#f59e0b; }
+.pkt-SMB     { color:#f87171; }
+.pkt-RDP     { color:#f87171; }
+.pkt-default { color:var(--text2); }
+
+/* ─── FOOTER ─── */
+#ftr {
+  flex-shrink:0; height:28px;
+  display:flex; align-items:center; gap:12px;
+  padding:0 16px; background:var(--panel2); border-top:1px solid var(--border);
+  font-size:10px; color:var(--text2);
+}
+.ftr-tag     { color:var(--blue); font-weight:700; font-size:11px; }
+.ftr-feed    { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ftr-metrics { display:flex; gap:16px; flex-shrink:0; }
+.mv { color:var(--cyan); font-weight:600; }
+
+/* ─── CHATBOT ─── */
+.chat-window {
+  position:fixed; bottom:36px; right:20px; width:320px; height:450px;
+  background:var(--panel); border:1px solid var(--border); border-radius:12px;
+  display:none; flex-direction:column;
+  box-shadow:0 10px 30px rgba(0,0,0,0.8); z-index:9998; overflow:hidden;
+}
+.chat-window.open { display:flex; }
+.chat-header {
+  background:var(--panel2); padding:12px 16px; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+  font-weight:600; font-size:13px;
+}
+.chat-close { background:none; border:none; color:var(--text2); cursor:pointer; font-size:16px; line-height:1; }
+.chat-close:hover { color:var(--text); }
+.chat-messages { flex:1; padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; }
+.chat-msg { max-width:85%; padding:10px 14px; border-radius:8px; font-size:12px; line-height:1.4; word-wrap:break-word; }
+.msg-ai   { background:rgba(59,130,246,0.15); color:var(--text); align-self:flex-start; border-bottom-left-radius:0; }
+.msg-user { background:rgba(34,197,94,0.15);  color:var(--text); align-self:flex-end;   border-bottom-right-radius:0; }
+.tts-stop-btn {
+  display:inline-flex; align-items:center; gap:4px; margin-top:8px;
+  background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25);
+  color:rgba(239,68,68,0.75); font-size:10px; font-family:inherit;
+  padding:3px 8px; border-radius:4px; cursor:pointer; transition:all 0.2s;
+}
+.tts-stop-btn:hover { background:rgba(239,68,68,0.2); color:#f87171; }
+.tts-stop-btn.done  { opacity:.35; cursor:default; pointer-events:none; }
+.chat-input {
+  display:flex; padding:12px; border-top:1px solid var(--border);
+  background:var(--panel2); gap:8px;
+}
+.chat-input input {
+  flex:1; background:rgba(0,0,0,0.2); border:1px solid var(--border);
+  color:var(--text); padding:8px 12px; border-radius:6px;
+  outline:none; font-family:inherit; font-size:12px;
+}
+.chat-input input:focus { border-color:rgba(59,130,246,0.4); }
+.chat-input button {
+  background:var(--blue); color:white; border:none;
+  padding:0 14px; border-radius:6px; cursor:pointer;
+  font-weight:600; font-size:12px; transition:background 0.2s;
+}
+.chat-input button:hover    { background:#2563eb; }
+.chat-input button:disabled { opacity:.6; cursor:not-allowed; }
+#chat-mic-btn {
+  background:rgba(255,255,255,0.05); color:var(--text2);
+  border:1px solid var(--border); padding:0 10px;
+  border-radius:6px; cursor:pointer; font-size:14px; transition:all 0.2s;
+}
+#chat-mic-btn:hover    { background:rgba(255,255,255,0.1); color:white; }
+#chat-mic-btn.recording { background:rgba(239,68,68,0.2); color:var(--red); border-color:rgba(239,68,68,0.5); animation:pulse-mic 1.5s infinite; }
+@keyframes pulse-mic { 0%{box-shadow:0 0 0 0 rgba(239,68,68,.4)} 70%{box-shadow:0 0 0 6px rgba(239,68,68,0)} 100%{box-shadow:0 0 0 0 rgba(239,68,68,0)} }
+</style>
 </head>
-
 <body>
 
-  <!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════
      HEADER
 ══════════════════════════════════════════ -->
-  <div id="header">
-    <div class="hdr-left">
-      <div class="hdr-icon">🛡️</div>
-      <div>
-        <div class="hdr-title">Decentralized &amp; Behavioural Analytical Cyber Triage Tool</div>
-        <div class="hdr-subtitle">GNN Autoencoder · Hyperledger Fabric · Real-time Threat Intelligence</div>
+<div id="header">
+  <div class="hdr-left">
+    <div class="hdr-icon" title="Cyber Triage — AI-powered, blockchain-backed threat detection system">🛡️</div>
+    <div>
+      <div class="hdr-title">Cyber Triage Dashboard</div>
+      <div class="hdr-subtitle">GNN Autoencoder · Hyperledger Fabric · Real-time Threat Intelligence</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="ws-pill" title="WebSocket connection status — green means live data is streaming from the backend; red means disconnected">
+      <div class="ws-dot off" id="ws-dot"></div>
+      <span id="ws-lbl">CONNECTING...</span>
+    </div>
+    <button class="chat-hdr-btn" onclick="toggleChat()"
+      title="Open the AI Security Assistant — ask any question about detected threats, anomalies, or general cybersecurity topics">
+      💬 AI Assistant
+    </button>
+    <button class="inject-btn" id="inject-btn" onclick="injectTestAttack(this)"
+      title="Inject a simulated attack process into the monitoring pipeline to test end-to-end detection, alerting, and blockchain recording">
+      ⚡ Inject Test Attack
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ALERT STRIP
+══════════════════════════════════════════ -->
+<div id="alert-strip" title="Live security alert ticker — scrolls the most recent critical threat messages detected by the system">
+  <div class="alert-tag">ALERT</div>
+  <div class="alert-text" id="alert-txt">System monitoring active — no critical alerts detected</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB BAR
+══════════════════════════════════════════ -->
+<div id="tab-bar">
+  <button class="tab-btn active" data-tab="overview"
+    title="Overview: high-level summary of system health, monitored process counts, model loss, blockchain commits, and recent security alerts">
+    <span class="tab-icon">📊</span> Overview
+  </button>
+  <button class="tab-btn" data-tab="graph"
+    title="Process Graph: animated visual map of all monitored processes. Nodes are processes, edges show parent-child relationships. Red nodes = anomalous.">
+    <span class="tab-icon">🕸️</span> Process Graph
+  </button>
+  <button class="tab-btn" data-tab="anomaly"
+    title="Anomaly Detection: live time-series chart of GNN reconstruction error plus a full table of every event that exceeded the 0.75 detection threshold">
+    <span class="tab-icon">⚠️</span> Anomaly Detection
+  </button>
+  <button class="tab-btn" data-tab="blockchain"
+    title="Blockchain: tamper-proof audit log of all security events stored as immutable blocks on Hyperledger Fabric via the RAFT consensus orderer">
+    <span class="tab-icon">🔗</span> Blockchain
+  </button>
+  <button class="tab-btn" data-tab="forensic"
+    title="Forensic Report: detailed JSON evidence report automatically generated for any high-risk process detection (score > 0.75)">
+    <span class="tab-icon">🔬</span> Forensic Report
+  </button>
+  <button class="tab-btn" data-tab="sniffer"
+    title="Packet Sniffer: live network packet capture showing source, destination, protocol, size and payload info. Requires Administrator privileges and Npcap on Windows.">
+    <span class="tab-icon">📡</span> Packet Sniffer
+  </button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TAB CONTENT
+══════════════════════════════════════════ -->
+<div id="tab-content">
+
+  <!-- ── TAB 1: OVERVIEW ── -->
+  <div class="tab-pane active" id="tab-overview">
+
+    <div class="ov-cards">
+      <div class="ov-card c-cyan"
+        title="Total number of processes currently being monitored by the GNN autoencoder in this cycle">
+        <span class="oc-lbl">Monitored Processes</span>
+        <span class="oc-val" id="h-procs">0</span>
+        <span class="oc-sub">Active process nodes</span>
+      </div>
+      <div class="ov-card c-red"
+        title="Processes with GNN reconstruction error (anomaly score) above 0.75 — these are considered critical threats requiring investigation">
+        <span class="oc-lbl">Anomalies Detected</span>
+        <span class="oc-val" id="h-anom">0</span>
+        <span class="oc-sub">Score &gt; 0.75 threshold</span>
+      </div>
+      <div class="ov-card c-green"
+        title="Total blockchain transactions successfully committed to Hyperledger Fabric — each commit is a cryptographically secured forensic record">
+        <span class="oc-lbl">Blockchain Commits</span>
+        <span class="oc-val" id="h-commits">0</span>
+        <span class="oc-sub">TX on Hyperledger</span>
+      </div>
+      <div class="ov-card c-amber"
+        title="Current GNN autoencoder reconstruction loss — measures how well the model represents normal behavior. Higher values indicate more unusual activity.">
+        <span class="oc-lbl">Model Loss</span>
+        <span class="oc-val" id="ov-loss">0.0000</span>
+        <span class="oc-sub">GNN reconstruction error</span>
+      </div>
+      <div class="ov-card" style="border:1px solid var(--border)"
+        title="Average time in milliseconds for a transaction to be committed to the Hyperledger Fabric blockchain — lower values mean a healthy network">
+        <span class="oc-lbl" style="font-size:10px;color:var(--text2)">Blockchain Latency</span>
+        <span class="oc-val" id="h-lat" style="color:#fb923c">0ms</span>
+        <span class="oc-sub">Avg commit latency</span>
       </div>
     </div>
-    <div class="hdr-right">
-      <div class="ws-pill">
-        <div class="ws-dot off" id="ws-dot"></div>
-        <span id="ws-lbl">CONNECTING...</span>
+
+    <div class="ov-bottom">
+
+      <!-- System Status -->
+      <div class="ov-panel">
+        <div class="ov-panel-hdr" title="Overall security posture of the monitored system — turns red when any process exceeds the anomaly threshold">
+          <span class="ov-panel-hdr-title">System Status</span>
+          <span class="badge b-green" id="sys-status-badge">OPERATIONAL</span>
+        </div>
+        <div class="ov-panel-body">
+          <div class="sys-status-big ok" id="ov-status-big">OPERATIONAL</div>
+          <div class="sys-row" title="Total processes being monitored in the current GNN inference cycle">
+            <span class="sk">Processes</span><span class="sv" id="ov-procs">0</span>
+          </div>
+          <div class="sys-row" title="Processes flagged as anomalous — score exceeded the 0.75 detection threshold">
+            <span class="sk">Anomalies</span><span class="sv" id="ov-anom">0</span>
+          </div>
+          <div class="sys-row" title="Number of process nodes in the current process graph snapshot">
+            <span class="sk">Graph Nodes</span><span class="sv" id="ov-nodes">0</span>
+          </div>
+          <div class="sys-row" title="Number of edges (parent-child process relationships) in the current graph">
+            <span class="sk">Graph Edges</span><span class="sv" id="ov-edges">0</span>
+          </div>
+          <div class="sys-row" title="Blockchain commits — forensic evidence records stored on Hyperledger Fabric">
+            <span class="sk">BC Commits</span><span class="sv" id="bc-commits">0</span>
+          </div>
+          <div class="sys-row" title="Latest measured blockchain commit latency in milliseconds">
+            <span class="sk">BC Latency</span><span class="sv" id="ov-lat">—</span>
+          </div>
+        </div>
       </div>
-      <button class="chat-hdr-btn" onclick="toggleChat()">
-        💬 AI Assistant
-      </button>
-      <button class="inject-btn" id="inject-btn" onclick="injectTestAttack(this)">
-        ⚡ Inject Test Attack
-      </button>
+
+      <!-- Recent Alerts -->
+      <div class="ov-panel">
+        <div class="ov-panel-hdr" title="Most recent high-risk detections — processes that exceeded the critical anomaly threshold">
+          <span class="ov-panel-hdr-title">Recent Alerts</span>
+          <span class="badge b-red" id="alerts-badge">0 alerts</span>
+        </div>
+        <div class="ov-panel-body" id="ov-alerts-list">
+          <div class="empty-state">
+            <div class="empty-icon">🔔</div>
+            <div>No alerts yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Metrics -->
+      <div class="ov-panel">
+        <div class="ov-panel-hdr" title="Real-time performance metrics from the GNN autoencoder model running anomaly detection">
+          <span class="ov-panel-hdr-title">Model Metrics</span>
+          <span class="badge b-blue">GNN Autoencoder</span>
+        </div>
+        <div class="ov-panel-body">
+          <div class="mm-metric" title="GNN reconstruction loss — how different the current graph is from the model's learned 'normal' state. Above 0.75 triggers an alert.">
+            <div class="mm-lbl">Reconstruction Loss</div>
+            <div class="mm-val" id="ov-mm-loss" style="color:#4ade80">0.0000</div>
+            <div class="mm-bar-bg"><div class="mm-bar-fill" style="background:#4ade80;width:0%" id="ov-loss-bar"></div></div>
+          </div>
+          <div class="mm-metric" title="Proportion of monitored processes currently flagged as anomalous — high ratios may indicate a widespread attack">
+            <div class="mm-lbl">Anomaly Ratio</div>
+            <div class="mm-val" id="ov-mm-ratio" style="color:#fbbf24">0.0%</div>
+            <div class="mm-bar-bg"><div class="mm-bar-fill" style="background:#fbbf24;width:0%" id="ov-ratio-bar"></div></div>
+          </div>
+          <div class="mm-metric" title="Training epoch counter — increments every 10 seconds as the model continuously adapts to the current process graph">
+            <div class="mm-lbl">Training Epoch</div>
+            <div class="mm-val" id="h-epoch" style="color:#93c5fd">0</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════
-     MAIN
-══════════════════════════════════════════ -->
-  <div id="main">
-
-    <!-- ROW 1: STAT CARDS -->
-    <div class="cards-row">
-
-      <div class="stat-card c-blue" onclick="highlightPanel('panel-anom', 'rgba(59,130,246,0.5)')">
-        <div class="sc-icon i-blue">📊</div>
-        <div class="sc-body">
-          <div class="sc-lbl">Total Events</div>
-          <div class="sc-val v-blue" id="sc-total">—</div>
-          <div class="sc-delta d-zero" id="sc-total-d">Processes monitored</div>
-        </div>
+  <!-- ── TAB 2: PROCESS GRAPH ── -->
+  <div class="tab-pane" id="tab-graph">
+    <div class="pg-left">
+      <div class="pg-left-hdr">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">Process List</div>
+        <div class="pg-hint">Click a row to inspect its node</div>
+        <div class="pg-anom-badge" id="pg-anom-badge"
+          title="Count of processes currently exceeding the anomaly threshold of 0.75 — these appear highlighted in red">0 ANOM</div>
       </div>
-
-      <div class="stat-card c-orange" onclick="highlightPanel('panel-triage', 'rgba(249,115,22,0.5)')">
-        <div class="sc-icon i-orange">⚠️</div>
-        <div class="sc-body">
-          <div class="sc-lbl">Anomalies Detected</div>
-          <div class="sc-val v-orange" id="sc-anom">—</div>
-          <div class="sc-delta d-zero" id="sc-anom-d">Score &gt; 0.75</div>
-        </div>
-      </div>
-
-      <div class="stat-card c-red" onclick="highlightPanel('panel-triage', 'rgba(239,68,68,0.6)')">
-        <div class="sc-icon i-red">🔴</div>
-        <div class="sc-body">
-          <div class="sc-lbl">High-Risk Incidents</div>
-          <div class="sc-val v-red" id="sc-high">—</div>
-          <div class="sc-delta d-zero" id="sc-high-d">Score &gt; 0.85</div>
-        </div>
-      </div>
-
-      <div class="stat-card c-purple" onclick="highlightPanel('panel-bc', 'rgba(139,92,246,0.5)')">
-        <div class="sc-icon i-purple">🔗</div>
-        <div class="sc-body">
-          <div class="sc-lbl">On Blockchain</div>
-          <div class="sc-val v-purple" id="sc-bc">—</div>
-          <div class="sc-delta d-zero" id="sc-bc-d">TX committed</div>
-        </div>
-      </div>
-
-      <div class="stat-card c-teal" onclick="openPacketPanel()">
-        <div class="sc-icon i-teal">📡</div>
-        <div class="sc-body">
-          <div class="sc-lbl">Packet Capture</div>
-          <div class="sc-val v-teal" id="sc-pkt">—</div>
-          <div class="sc-delta d-zero" id="sc-pkt-d">pkt/s · click to open</div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ROW 2: ANOMALY DETECTION + INCIDENT TRIAGE -->
-    <div class="middle-row">
-
-      <!-- Anomaly Detection -->
-      <div class="panel" id="panel-anom">
-        <div class="panel-hdr">
-          <div>
-            <div class="panel-title">Anomaly Detection</div>
-            <div class="panel-sub">Live process monitoring · sorted by risk score</div>
-          </div>
-          <span class="badge b-blue" id="proc-badge">0 processes</span>
-        </div>
-        <div class="panel-body" id="anom-body">
-          <div class="spinner-wrap" id="anom-spinner">
-            <div class="spinner"></div> Waiting for data...
-          </div>
-          <table class="dt" id="anom-table" style="display:none">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Process Name</th>
-                <th>PID</th>
-                <th>Activity</th>
-                <th>Anomaly Score</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="anom-tbody"></tbody>
-          </table>
-        </div>
-        <div class="view-all-wrap">
-          <button class="view-all-btn" id="view-all-btn" onclick="toggleAll()">View All Processes</button>
-        </div>
-      </div>
-
-      <!-- Incident Triage -->
-      <div class="panel" id="panel-triage">
-        <div class="panel-hdr">
-          <div>
-            <div class="panel-title">Incident Triage</div>
-            <div class="panel-sub">Active incidents requiring review</div>
-          </div>
-          <span class="badge b-high" id="inc-badge">0 incidents</span>
-        </div>
-        <div class="panel-body">
-          <div class="empty-state" id="triage-empty">
-            <div class="empty-icon">📋</div>
-            <div>No incidents yet</div>
-            <div style="color:var(--text3);margin-top:3px">Waiting for alerts from backend...</div>
-          </div>
-          <table class="dt" id="triage-table" style="display:none">
-            <thead>
-              <tr>
-                <th>Incident ID</th>
-                <th>Type</th>
-                <th>Risk Score</th>
-                <th>Priority</th>
-              </tr>
-            </thead>
-            <tbody id="triage-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ROW 3: TIMELINE + BLOCKCHAIN + RIGHT -->
-    <div class="bottom-row">
-
-      <!-- Incident Timeline -->
-      <div class="panel">
-        <div class="panel-hdr">
-          <div>
-            <div class="panel-title">Incident Timeline</div>
-            <div class="panel-sub">Chronological event log</div>
-          </div>
-          <span class="badge b-blue" id="tl-badge">0 events</span>
-        </div>
-        <div class="panel-body">
-          <div class="empty-state" id="tl-empty">
-            <div class="empty-icon">🕐</div>
-            <div>No events recorded yet</div>
-          </div>
-          <div class="tl-wrap" id="tl-list" style="display:none"></div>
-        </div>
-      </div>
-
-      <!-- Blockchain Evidence Verification -->
-      <div class="panel" id="panel-bc">
-        <div class="panel-hdr">
-          <div>
-            <div class="panel-title">Blockchain Evidence Verification</div>
-            <div class="panel-sub">Incidents verified and secured on Hyperledger Fabric</div>
-          </div>
-          <span class="badge b-purple">Immutable</span>
-        </div>
-        <div class="panel-body">
-          <div class="empty-state" id="bc-empty">
-            <div class="empty-icon">🔗</div>
-            <div>No blockchain records yet</div>
-            <div style="color:var(--text3);margin-top:3px">Records appear when anomalies are persisted</div>
-          </div>
-          <div id="bc-list"></div>
-        </div>
-        <div class="bc-footer">
-          <button class="verify-btn" id="verify-btn" onclick="verifyLatest()">
-            ✓ Verify Integrity
-          </button>
-        </div>
-      </div>
-
-      <!-- Right Column: Donut + System Status -->
-      <div class="right-col">
-
-        <div class="panel" style="padding: 16px; flex-shrink: 0;">
-          <div class="panel-title" style="margin-bottom: 4px;">AI Model Diagnostics</div>
-          <div class="panel-sub" style="margin-bottom: 14px;">GNN Autoencoder · Continuous Learning</div>
-          <button class="verify-btn"
-            style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.22); color: var(--blue);"
-            onclick="openModelModal()">
-            🧠 View Auto-Train Insights
-          </button>
-        </div>
-
-        <div class="sys-panel">
-          <div class="sys-title">System Status</div>
-          <div class="sys-row">
-            <span class="sys-key">Log Collector</span>
-            <span class="sys-val">
-              <div class="sys-dot"></div>ACTIVE
-            </span>
-          </div>
-          <div class="sys-row">
-            <span class="sys-key">Analytics Engine</span>
-            <span class="sys-val">
-              <div class="sys-dot"></div>ACTIVE
-            </span>
-          </div>
-          <div class="sys-row">
-            <span class="sys-key">Triage Engine</span>
-            <span class="sys-val">
-              <div class="sys-dot"></div>ACTIVE
-            </span>
-          </div>
-          <div class="sys-row">
-            <span class="sys-key">Continuous Learning</span>
-            <span class="sys-val" id="sys-train-val" style="color:var(--text2);font-weight:500">
-              Waiting...
-            </span>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-  </div><!-- #main -->
-
-  <!-- PACKET CAPTURE DRAWER (fixed overlay — never affects layout) -->
-  <div id="pkt-panel">
-    <div id="pkt-hdr" onclick="togglePacketPanel()">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span id="pkt-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;animation:pulse 1.5s infinite;flex-shrink:0;"></span>
-        <span style="font-weight:600;font-size:12px;letter-spacing:.5px;">LIVE PACKET CAPTURE</span>
-        <span id="pkt-badge" style="font-size:10px;padding:2px 7px;border-radius:3px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3);">0 pkts</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:16px;">
-        <span id="pkt-pps"  style="font-size:11px;color:var(--text2);">0 pkt/s</span>
-        <span id="pkt-kbps" style="font-size:11px;color:var(--text2);">0 KB/s</span>
-        <span id="pkt-total-bytes" style="font-size:11px;color:var(--text2);">0 B total</span>
-        <span style="font-size:12px;color:var(--text2);cursor:pointer;padding:2px 6px;" title="Close">✕</span>
+      <div class="pg-proc-scroll" id="pg-proc-list"
+        title="All monitored processes sorted by PID. Red rows exceed the anomaly threshold. Click any row to show detailed metrics in the inspector panel.">
       </div>
     </div>
-    <div id="pkt-body">
-      <div id="pkt-proto-bar" style="display:flex;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border2);flex-wrap:wrap;"></div>
-      <div style="overflow-x:auto;flex:1;overflow-y:auto;">
+
+    <div class="pg-center">
+      <canvas id="graph-canvas"
+        title="Live process graph — each circle is a process, lines show parent-child relationships. Red/yellow nodes are anomalous. Click a node to inspect it. The graph updates every 50ms.">
+      </canvas>
+      <div class="graph-hud">
+        <div class="hud-item" title="Total number of process nodes currently visible in the graph">Nodes: <span id="hud-n">0</span></div>
+        <div class="hud-item" title="Total number of process relationship edges in the graph">Edges: <span id="hud-e">0</span></div>
+        <div class="hud-item" title="Current GNN reconstruction loss — the model's measure of how 'unusual' the process graph is">Loss: <span id="hud-l">0.0000</span></div>
+      </div>
+      <div class="graph-legend">
+        <div class="gl-item" title="Green node — normal process, anomaly score is below 0.40">
+          <div class="gl-dot" style="background:#4ade80"></div> Normal
+        </div>
+        <div class="gl-item" title="Yellow node — elevated process, anomaly score between 0.40 and 0.75">
+          <div class="gl-dot" style="background:#fbbf24"></div> Warning
+        </div>
+        <div class="gl-item" title="Red node — critical process, anomaly score above 0.75. Triggers alert and blockchain record.">
+          <div class="gl-dot" style="background:#f87171"></div> Critical
+        </div>
+      </div>
+    </div>
+
+    <div class="pg-right">
+      <div class="pg-right-hdr">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">Node Inspector</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">Select a process to inspect</div>
+      </div>
+      <div class="pg-right-body">
+        <div id="pg-node-detail">
+          <div class="nd-empty">
+            <div class="nd-empty-icon">🔍</div>
+            <div>No process selected</div>
+            <div style="font-size:10px;margin-top:4px;color:var(--text3)">Click a node on the graph<br>or a row in the list</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 3: ANOMALY DETECTION ── -->
+  <div class="tab-pane" id="tab-anomaly">
+    <div class="ad-chart-section">
+      <div class="ad-chart-hdr">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">Anomaly Score Timeline</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">
+            GNN reconstruction error over time — dashed line marks the 0.75 alert threshold
+          </div>
+        </div>
+        <span class="badge b-red" id="ad-count-badge" title="Total number of anomaly events recorded since the system started">0 EVENTS</span>
+      </div>
+      <div class="ad-chart-wrap">
+        <canvas id="anom-chart"
+          title="Live rolling chart of GNN anomaly scores over the last 60 data points. Scores above the red dashed line (0.75) trigger alerts and are written to the blockchain.">
+        </canvas>
+      </div>
+    </div>
+
+    <div class="ad-table-section">
+      <div class="ad-table-hdr">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">Anomaly Event Log</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">Every event where the GNN score exceeded the detection threshold</div>
+        </div>
+        <span class="badge b-amber" title="Alert threshold — any process scoring above 0.75 is flagged as anomalous and recorded on the blockchain">Threshold: 0.75</span>
+      </div>
+      <div class="ad-table-scroll">
+        <table class="ad-table">
+          <thead>
+            <tr>
+              <th title="Time the anomaly was detected by the backend">Time</th>
+              <th title="Operating system Process ID of the flagged process">PID</th>
+              <th title="Executable name of the process that triggered the anomaly">Process Name</th>
+              <th title="GNN reconstruction error score — 0.0 is completely normal, 1.0 is maximally anomalous">Score</th>
+              <th title="Threat classification: NORMAL (&lt;0.40) / WARNING (0.40–0.75) / CRITICAL (&gt;0.75)">Status</th>
+            </tr>
+          </thead>
+          <tbody id="anom-table-body">
+            <tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Waiting for detections...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 4: BLOCKCHAIN ── -->
+  <div class="tab-pane" id="tab-blockchain">
+    <div class="bc-left">
+      <div class="bc-net">
+        <div class="bc-net-title">Network Status</div>
+        <div class="net-row" title="The Hyperledger Fabric channel where all security events are recorded — channels isolate different data streams">
+          <span class="nk">Channel</span><span class="nv">cytriage-ch1</span>
+        </div>
+        <div class="net-row" title="Consensus mechanism used — RAFT is a leader-based protocol that ensures all peers agree on block order">
+          <span class="nk">Orderer</span><span class="nv">RAFT</span>
+        </div>
+        <div class="net-row" title="Total number of blockchain transactions committed in this session — each TX contains a signed forensic record">
+          <span class="nk">TX Committed</span><span class="nv green" id="bc-commits-2">0</span>
+        </div>
+        <div class="net-row" title="The chaincode (smart contract) deployed on Hyperledger Fabric that handles writing and verifying evidence records">
+          <span class="nk">Chaincode</span><span class="nv purple">triage-cc</span>
+        </div>
+      </div>
+      <div class="bc-lat">
+        <div class="bc-lat-title" title="Time series of blockchain commit latency — each bar represents one transaction. Bars turn red above 500ms.">Commit Latency (ms)</div>
+        <div class="bc-lat-wrap">
+          <canvas id="lat-chart"
+            title="Blockchain commit latency chart — shows how long each transaction takes to be finalized on Hyperledger Fabric. High latency may indicate network stress.">
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="bc-right">
+      <div class="bc-right-hdr">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">Immutable Evidence Log</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">Each block = one forensic event cryptographically stored on Hyperledger Fabric</div>
+        </div>
+        <span class="badge b-purple" title="All records are cryptographically signed and cannot be altered once committed — provides a tamper-proof audit trail">Tamper-Proof</span>
+      </div>
+      <div class="bc-log-scroll" id="chain-log">
+        <div id="bc-placeholder" style="text-align:center;color:var(--text3);padding:40px;font-size:12px">
+          <div style="font-size:28px;opacity:0.3;margin-bottom:8px">🔗</div>
+          Waiting for blockchain events...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 5: FORENSIC REPORT ── -->
+  <div class="tab-pane" id="tab-forensic">
+    <div class="fr-topbar">
+      <div class="fr-meta">
+        <div class="fr-meta-item" title="Unique identifier for this forensic report — used to reference the evidence record">
+          <span class="fm-lbl">Report ID</span>
+          <span class="fm-val" id="fr-id">—</span>
+        </div>
+        <div class="fr-meta-item" title="ISO timestamp of when the anomaly was first detected by the backend">
+          <span class="fm-lbl">Timestamp</span>
+          <span class="fm-val" id="fr-ts">—</span>
+        </div>
+        <div class="fr-meta-item" title="Operating system Process ID of the process that triggered this forensic report">
+          <span class="fm-lbl">PID</span>
+          <span class="fm-val" id="fr-pid">—</span>
+        </div>
+        <div class="fr-meta-item" title="SHA-256 hash of the report content — verify integrity by comparing against the blockchain record">
+          <span class="fm-lbl">SHA-256</span>
+          <span class="fm-val" id="fr-hash">—</span>
+        </div>
+        <div class="fr-meta-item" title="Current threat classification of this detection event">
+          <span class="fm-lbl">Status</span>
+          <span class="fr-status" id="fr-status">—</span>
+        </div>
+      </div>
+      <div class="fr-actions">
+        <button class="fr-btn" id="copy-btn"
+          title="Copy the full JSON forensic report to clipboard — paste into a SIEM, ticket system, or share with your security team">
+          COPY TO CLIPBOARD
+        </button>
+      </div>
+    </div>
+    <div class="fr-report-area">
+      <div class="fr-empty" id="fr-empty">
+        <div class="fr-empty-icon">🔬</div>
+        <div>No forensic report yet</div>
+        <div style="font-size:10px;margin-top:6px;color:var(--text3)">
+          Automatically generated when a process anomaly score exceeds 0.75
+        </div>
+      </div>
+      <pre id="report-json" style="display:none"></pre>
+    </div>
+  </div>
+
+  <!-- ── TAB 6: PACKET SNIFFER ── -->
+  <div class="tab-pane" id="tab-sniffer">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+
+    <!-- Top stats bar -->
+    <div class="pkt-topbar">
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <span class="pkt-live-dot" id="pkt-live-dot"></span>
+        <span style="font-size:11px;font-weight:600;color:var(--text)">Live Packet Capture</span>
+        <span class="badge b-red" id="pkt-badge" title="Total packets captured since session start">0 pkts</span>
+      </div>
+      <div class="pkt-stat" title="Current packets-per-second throughput">
+        <span>Packets/s</span><span class="pkt-val" id="pkt-pps">0</span>
+      </div>
+      <div class="pkt-stat" title="Current network throughput in kilobytes per second">
+        <span>Throughput</span><span class="pkt-val" id="pkt-kbps">0 KB/s</span>
+      </div>
+      <div class="pkt-stat" title="Total bytes captured in this session">
+        <span>Total</span><span class="pkt-val" id="pkt-total-bytes">0 B</span>
+      </div>
+      <div class="pkt-proto-bar" id="pkt-proto-bar"
+        title="Protocol distribution — shows how many packets of each protocol have been captured">
+      </div>
+    </div>
+
+    <!-- Packet table -->
+    <div class="pkt-body">
+      <div class="pkt-table-wrap">
         <table id="pkt-table">
           <thead>
             <tr>
-              <th>No.</th><th>Time</th><th>Source</th><th>Destination</th>
-              <th>Protocol</th><th>Len</th><th>Info</th>
+              <th title="Sequential packet number in this capture session">No.</th>
+              <th title="Time the packet was captured">Time</th>
+              <th title="Source IP address and port number">Source</th>
+              <th title="Destination IP address and port number">Destination</th>
+              <th title="Network protocol — e.g. HTTP, DNS, TCP, UDP">Protocol</th>
+              <th title="Packet size in bytes">Len</th>
+              <th title="Human-readable summary of the packet payload or flags">Info</th>
             </tr>
           </thead>
           <tbody id="pkt-tbody"></tbody>
         </table>
+        <div id="pkt-empty" style="text-align:center;padding:40px;color:var(--text3);font-size:12px;">
+          <div style="font-size:28px;opacity:0.3;margin-bottom:10px">📡</div>
+          <div>Waiting for packets...</div>
+          <div style="margin-top:6px;font-size:10px;">Requires Administrator privileges and Npcap on Windows</div>
+        </div>
       </div>
-      <div id="pkt-empty" style="text-align:center;padding:16px;color:var(--text3);font-size:12px;">
-        Waiting for packets — requires Administrator privileges and Npcap on Windows
-      </div>
+    </div>
+
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════
+</div><!-- #tab-content -->
+
+<!-- ══════════════════════════════════════════
+     ALERT DETAIL MODAL
+══════════════════════════════════════════ -->
+<div id="alert-modal-backdrop" onclick="closeAlertModal(event)">
+  <div id="alert-modal">
+    <div class="amd-header">
+      <span class="amd-title">🚨 Alert Details</span>
+      <button class="amd-close" onclick="closeAlertModal()" title="Close">✕</button>
+    </div>
+    <div class="amd-body" id="amd-body"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      FOOTER
 ══════════════════════════════════════════ -->
-  <div id="footer">
-    <div class="ftr-indicators">
-      <span class="ftr-label">System Status</span>
-      <span class="ftr-sep">|</span>
-      <div class="ftr-dot"></div><span>ACTIVE</span>
-      <span class="ftr-sep">|</span>
-      <div class="ftr-dot"></div><span>ACTIVE</span>
-      <span class="ftr-sep">|</span>
-      <div class="ftr-dot"></div><span>Decent</span>
-    </div>
-    <div class="ftr-feed">
-      <span class="ftr-live">LIVE</span>
-      <span id="feed-msg">Initializing system...</span>
-    </div>
-    <button class="clear-btn" onclick="clearCooldowns()">↺ Clear Cooldowns</button>
+<div id="ftr">
+  <span class="ftr-tag" title="Live backend status feed">&gt;&gt;</span>
+  <div class="ftr-feed" id="ftr-feed" title="Real-time status messages from the GNN inference pipeline and blockchain writer">Initializing GNN Autoencoder...</div>
+  <div class="ftr-metrics">
+    <span title="Current process graph size: N = nodes (processes), E = edges (relationships)">GRAPH: <span class="mv" id="fm-g">0N·0E</span></span>
+    <span title="Latest GNN reconstruction loss value">LOSS: <span class="mv" id="fm-l">0.0000</span></span>
+    <span title="Hyperledger Fabric channel name for evidence storage">CHANNEL: <span class="mv">cytriage-ch1</span></span>
+    <span title="Consensus ordering service used by the Fabric network">ORDERER: <span class="mv">RAFT</span></span>
   </div>
+</div>
 
-  <!-- ══════════════════════════════════════════
-     REPORT MODAL
-══════════════════════════════════════════ -->
-  <div id="report-modal" onclick="if(event.target===this)closeModal()">
-    <div class="modal-box">
-      <div class="modal-hdr">
-        <div class="modal-title">🔬 Forensic Report</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <pre id="modal-content"></pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════
-     MODEL MODAL
-══════════════════════════════════════════ -->
-  <div id="model-modal" onclick="if(event.target===this)closeModelModal()">
-    <div class="modal-box" style="width: 500px;">
-      <div class="modal-hdr">
-        <div class="modal-title">🧠 Auto-Trained Model Details</div>
-        <button class="modal-close" onclick="closeModelModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <div style="font-size: 12px; color: var(--text); line-height: 1.6;">
-          <p><strong>Architecture:</strong> GNN Autoencoder (GAT Encoder + MLP Decoder)</p>
-          <p><strong>Baseline Strategy:</strong> 95th-percentile dynamic reconstruction error</p>
-          <p><strong>Continuous Learning:</strong> <span style="color:var(--green)">Active</span> (2-minute intervals)
-          </p>
-          <p><strong>Protection:</strong> Anti-poisoning heuristics enabled (skips training if anomalies present)</p>
-        </div>
-        <hr style="border:0; border-top:1px solid var(--border2); margin: 16px 0;">
-        <div style="font-size: 12px; font-weight: 600; margin-bottom: 10px; color: var(--text);">Recent Training Cycles
-        </div>
-        <div id="train-history-list"
-          style="font-size: 11px; color: var(--text2); display: flex; flex-direction: column; gap: 8px;">
-          <div style="opacity: 0.5;">No training cycles completed in this session yet.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════
      CHATBOT WIDGET
 ══════════════════════════════════════════ -->
-  <div class="chat-window" id="chat-window">
-    <div class="chat-header">
-      <span>🤖 CyberSec AI</span>
-      <button class="chat-close" onclick="toggleChat()">✕</button>
-    </div>
-    <div class="chat-messages" id="chat-messages">
-      <div class="chat-msg msg-ai">Hello! I am your Cyber Triage AI assistant. Ask me anything about cybersecurity or
-        system anomalies.</div>
-    </div>
-    <div class="chat-input">
-      <button id="chat-mic-btn" onclick="toggleMic()" title="Click to speak">🎤</button>
-      <input type="text" id="chat-input-field" placeholder="Ask a security question..."
-        onkeypress="if(event.key==='Enter') sendChatMessage()">
-      <button id="chat-send-btn" onclick="sendChatMessage()">Send</button>
-    </div>
+<div class="chat-window" id="chat-window">
+  <div class="chat-header">
+    <span>🤖 CyberSec AI</span>
+    <button class="chat-close" onclick="toggleChat()" title="Close the AI assistant">✕</button>
   </div>
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg msg-ai">Hello! I am your Cyber Triage AI assistant. Ask me anything about cybersecurity or system anomalies.</div>
+  </div>
+  <div class="chat-input">
+    <button id="chat-mic-btn" onclick="toggleMic()"
+      title="Voice input — click to start speaking, click again or wait 1.5 s of silence to auto-send">🎤</button>
+    <input type="text" id="chat-input-field" placeholder="Ask a security question..."
+      onkeypress="if(event.key==='Enter') sendChatMessage()">
+    <button id="chat-send-btn" onclick="sendChatMessage()" title="Send message to the AI assistant">Send</button>
+  </div>
+</div>
 
-  <!-- ══════════════════════════════════════════
+<!-- ══════════════════════════════════════════
      JAVASCRIPT
 ══════════════════════════════════════════ -->
-  <script>
-    'use strict';
-
-    // ═══════════════════════════════════════════════
-    // STATE
-    // ═══════════════════════════════════════════════
-    let procs = [];
-    let incidents = [];
-    let incCounter = 0;
-    let tlEvents = [];
-    let bcRecords = [];
-    let trainHistory = [];
-    let lastReport = null;
-    let showAll = false;
-    let prevTotal = 0;
-    let prevBc = 0;
-    let wsTimer = null;
-    let lastCycleTs = null;
-
-    // ═══════════════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════════════
-    function ts() { return new Date().toTimeString().slice(0, 8); }
-
-    function scoreColor(s) {
-      if (s > 0.85) return '#f87171';
-      if (s > 0.75) return '#fb923c';
-      if (s > 0.40) return '#fbbf24';
-      return '#4ade80';
-    }
-
-    function scoreBadge(s) {
-      if (s > 0.85) return '<span class="badge b-high">HIGH</span>';
-      if (s > 0.75) return '<span class="badge b-orange">HIGH</span>';
-      if (s > 0.60) return '<span class="badge b-medium">MEDIUM</span>';
-      return '<span class="badge b-low">NORMAL</span>';
-    }
-
-    function priorityBadge(s) {
-      if (s > 0.75) return '<span class="badge b-high">HIGH</span>';
-      if (s > 0.60) return '<span class="badge b-medium">MEDIUM</span>';
-      return '<span class="badge b-low">LOW</span>';
-    }
-
-    function classifyProc(name, score) {
-      const n = (name || '').toLowerCase();
-      if (n.includes('crypt') || n.includes('miner') || n.includes('xmr')) return 'Cryptominer';
-      if (n.includes('ransom') || n.includes('enc')) return 'Ransomware';
-      if (n.includes('nc') || n.includes('netcat')) return 'Network Shell';
-      if (n.includes('cmd') || n.includes('powershell') || n.includes('bash')) return 'Shell Activity';
-      if (n.includes('inject') || n.includes('hook')) return 'Code Injection';
-      if (score > 0.85) return 'High Risk Process';
-      if (score > 0.75) return 'Suspicious Process';
-      return 'Normal Activity';
-    }
-
-    function activityLabel(name, score) {
-      if (score > 0.85) return 'Anomalous Behaviour';
-      if (score > 0.75) return 'Suspicious Activity';
-      if (score > 0.60) return 'Elevated Activity';
-      return 'Normal Operation';
-    }
-
-    function deltaHtml(cur, prev) {
-      const d = cur - prev;
-      if (d === 0) return '';
-      return `<br><span class="sc-delta ${d > 0 ? 'd-up' : 'd-zero'}">
-    ${d > 0 ? '↑' : '↓'} ${Math.abs(d)} since last
-  </span>`;
-    }
-
-    // ═══════════════════════════════════════════════
-    // STAT CARDS
-    // ═══════════════════════════════════════════════
-    function updateCards(total, anom, high, bc) {
-      document.getElementById('sc-total').textContent = total;
-      document.getElementById('sc-anom').textContent = anom;
-      document.getElementById('sc-high').textContent = high;
-      document.getElementById('sc-bc').textContent = bc;
-
-      const dEl = document.getElementById('sc-total-d');
-      dEl.innerHTML = `Processes monitored${deltaHtml(total, prevTotal)}`;
-
-      const bcEl = document.getElementById('sc-bc-d');
-      bcEl.innerHTML = `TX committed${deltaHtml(bc, prevBc)}`;
-
-      if (total !== prevTotal) {
-        document.getElementById('sc-total-d').className =
-          'sc-delta ' + (total > prevTotal ? 'd-up' : 'd-zero');
-      }
-
-      prevTotal = total;
-      prevBc = bc;
-    }
-
-    // ═══════════════════════════════════════════════
-    // ANOMALY TABLE
-    // ═══════════════════════════════════════════════
-    function rebuildAnomTable() {
-      const now = ts();
-      const sorted = [...procs].sort((a, b) => b.score - a.score);
-      const display = showAll ? sorted : sorted.slice(0, 8);
-
-      document.getElementById('anom-spinner').style.display = 'none';
-      const tbl = document.getElementById('anom-table');
-      tbl.style.display = 'table';
-
-      document.getElementById('proc-badge').textContent = `${procs.length} processes`;
-      document.getElementById('view-all-btn').textContent =
-        showAll ? `Show Top 8  ▲` : `View All Processes (${procs.length} total)  ▾`;
-
-      document.getElementById('anom-tbody').innerHTML = display.map(p => {
-        const col = scoreColor(p.score);
-        const pct = Math.min(100, Math.round(p.score * 100));
-        const hostsHtml = p.remote_hosts && p.remote_hosts.length ? `<div style="color:var(--blue);font-size:9px;margin-top:3px;line-height:1.4;max-width:280px;word-wrap:break-word;" title="${p.remote_hosts.join(', ')}">🌐 ${p.remote_hosts.join(', ')}</div>` : '';
-        return `<tr>
-      <td class="meta-text">${now}</td>
-      <td><span class="proc-name">${p.name}</span>${hostsHtml}</td>
-      <td class="meta-text">${p.pid}</td>
-      <td class="meta-text">${activityLabel(p.name, p.score)}</td>
-      <td>
-        <div class="score-cell">
-          <span style="color:${col};font-weight:600;min-width:44px;font-size:11px">${p.score.toFixed(4)}</span>
-          <div class="score-bar-bg">
-            <div class="score-bar-fg" style="width:${pct}%;background:${col}"></div>
-          </div>
-        </div>
-      </td>
-      <td>${scoreBadge(p.score)}</td>
-    </tr>`;
-      }).join('');
-    }
-
-    function toggleAll() {
-      showAll = !showAll;
-      rebuildAnomTable();
-    }
-
-    // ═══════════════════════════════════════════════
-    // INCIDENT TRIAGE
-    // ═══════════════════════════════════════════════
-    function addIncident(msg) {
-      incCounter++;
-      const id = `INC${String(incCounter).padStart(3, '0')}`;
-      const score = msg.score || 0;
-      const type = classifyProc(msg.process, score);
-      const risk = Math.round(score * 100);
-      const pri = score > 0.75 ? 'h' : score > 0.60 ? 'm' : 'l';
-
-      incidents.unshift({ id, type, risk, score, pri });
-      if (incidents.length > 6) incidents.pop();
-
-      rebuildTriageTable();
-      return id;
-    }
-
-    function rebuildTriageTable() {
-      if (!incidents.length) return;
-      document.getElementById('triage-empty').style.display = 'none';
-      document.getElementById('triage-table').style.display = 'table';
-      document.getElementById('inc-badge').textContent = `${incidents.length} incidents`;
-
-      document.getElementById('triage-tbody').innerHTML = incidents.map(inc => `
-    <tr>
-      <td style="font-weight:600">${inc.id}</td>
-      <td class="meta-text">${inc.type}</td>
-      <td><span style="color:${scoreColor(inc.score)};font-weight:700">${inc.risk}</span></td>
-      <td>${priorityBadge(inc.score)}</td>
-    </tr>`).join('');
-    }
-
-    // ═══════════════════════════════════════════════
-    // INCIDENT TIMELINE
-    // ═══════════════════════════════════════════════
-    function addTimelineEvent(msg, incId) {
-      const now = ts();
-      const crit = msg.is_critical;
-      const desc = msg.msg || `Alert: ${msg.process || 'unknown'} (PID ${msg.pid})`;
-      tlEvents.unshift({ ts: now, desc, crit, id: incId });
-      if (tlEvents.length > 8) tlEvents.pop();
-      rebuildTimeline();
-    }
-
-    function rebuildTimeline() {
-      if (!tlEvents.length) return;
-      document.getElementById('tl-empty').style.display = 'none';
-      const list = document.getElementById('tl-list');
-      list.style.display = 'flex';
-      document.getElementById('tl-badge').textContent = `${tlEvents.length} events`;
-
-      list.innerHTML = tlEvents.map((ev, i) => `
-    <div class="tl-item">
-      <div class="tl-left">
-        <div class="tl-dot" style="background:${ev.crit ? 'var(--red)' : 'var(--amber)'}"></div>
-        ${i < tlEvents.length - 1 ? '<div class="tl-line"></div>' : ''}
-      </div>
-      <div class="tl-body">
-        <div class="tl-ts">${ev.ts}${ev.id ? ' · ' + ev.id : ''}</div>
-        <div class="tl-desc">${ev.desc}</div>
-      </div>
-    </div>`).join('');
-    }
-
-    // ═══════════════════════════════════════════════
-    // BLOCKCHAIN PANEL
-    // ═══════════════════════════════════════════════
-    function addBcRecord(msg, incId) {
-      if (!msg.saved_to_disk) return;
-      const score = msg.score || 0;
-      const rec = {
-        id: incId || `INC${String(incCounter).padStart(3, '0')}`,
-        type: classifyProc(msg.process, score),
-        risk: Math.round(score * 100),
-        score,
-        report: msg.report || null
-      };
-      if (msg.report) lastReport = msg.report;
-      bcRecords.unshift(rec);
-      if (bcRecords.length > 6) bcRecords.pop();
-      rebuildBcPanel();
-    }
-
-    function rebuildBcPanel() {
-      if (!bcRecords.length) return;
-      document.getElementById('bc-empty').style.display = 'none';
-
-      document.getElementById('bc-list').innerHTML = bcRecords.map((r, i) => {
-        const reportId = r.report && r.report.metadata && r.report.metadata.report_id
-          ? r.report.metadata.report_id : '';
-        return `
-    <div class="bc-item">
-      <div class="bc-check">✓</div>
-      <div class="bc-info">
-        <div class="bc-id">${r.id}</div>
-        <div class="bc-type">${r.type}</div>
-      </div>
-      <div class="bc-risk" style="color:${scoreColor(r.score)}">${r.risk}</div>
-      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
-        ${r.report
-          ? `<button class="view-link" onclick="showReport(${i})">View Details →</button>`
-          : ''}
-        <button class="verify-btn" style="width:auto;padding:3px 8px;font-size:10px;"
-          onclick="verifyHash(this,'${reportId}')">VERIFY</button>
-        <span style="font-size:10px;min-width:70px;"></span>
-      </div>
-    </div>`;
-      }).join('');
-    }
-
-    // ═══════════════════════════════════════════════
-    // REPORT MODAL
-    // ═══════════════════════════════════════════════
-    function showReport(idx) {
-      const r = bcRecords[idx];
-      if (!r || !r.report) return;
-      const json = JSON.stringify(r.report, null, 2)
-        .replace(/(".*?")\s*:/g, '<span class="jk">$1</span>:')
-        .replace(/:\s*(".*?")/g, ': <span class="jv">$1</span>')
-        .replace(/:\s*(\d+\.?\d*)/g, ': <span class="jn">$1</span>');
-      document.getElementById('modal-content').innerHTML = json;
-      document.getElementById('report-modal').classList.add('open');
-    }
-
-    function closeModal() {
-      document.getElementById('report-modal').classList.remove('open');
-    }
-
-    function openModelModal() {
-      document.getElementById('model-modal').classList.add('open');
-    }
-
-    function closeModelModal() {
-      document.getElementById('model-modal').classList.remove('open');
-    }
-
-    function rebuildTrainHistory() {
-      const list = document.getElementById('train-history-list');
-      if (!trainHistory.length) return;
-      list.innerHTML = trainHistory.map(th => `
-        <div style="display:flex; justify-content:space-between; background:var(--panel2); padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;">
-          <span><span style="color:var(--green)">✓</span> Success · ${th.ts}</span>
-          <span style="font-family:monospace; color:var(--blue)">Loss: ${th.loss.toFixed(4)}</span>
-        </div>
-      `).join('');
-    }
-
-    // ═══════════════════════════════════════════════
-    // VERIFY INTEGRITY
-    // ═══════════════════════════════════════════════
-    async function verifyHash(btn, reportId) {
-      if (!reportId || reportId === 'undefined') {
-        btn.nextElementSibling.textContent = 'NO REPORT';
-        btn.nextElementSibling.style.color = 'var(--amber)';
-        return;
-      }
-      btn.textContent = '...';
-      try {
-        const res = await fetch(`/api/verify-hash?report_id=${reportId}`, { method: 'POST' });
-        const data = await res.json();
-        const span = btn.nextElementSibling;
-        if (data.verified) {
-          span.textContent = '✓ VERIFIED';
-          span.style.color = 'var(--green)';
-        } else {
-          span.textContent = '✗ FAILED';
-          span.style.color = 'var(--red)';
-        }
-        setTimeout(() => { span.textContent = ''; btn.textContent = 'VERIFY'; }, 3000);
-      } catch (e) {
-        btn.nextElementSibling.textContent = 'ERROR';
-        btn.textContent = 'VERIFY';
-      }
-    }
-
-    async function verifyLatest() {
-      const btn = document.getElementById('verify-btn');
-      if (!lastReport) {
-        btn.textContent = '⚠ No report available yet';
-        setTimeout(() => { btn.textContent = '✓ Verify Integrity'; }, 2500);
-        return;
-      }
-      const rid = lastReport.metadata && lastReport.metadata.report_id;
-      if (!rid) {
-        btn.textContent = '⚠ Report ID not found';
-        setTimeout(() => { btn.textContent = '✓ Verify Integrity'; }, 2500);
-        return;
-      }
-
-      btn.textContent = 'Verifying...';
-      btn.disabled = true;
-      try {
-        const res = await fetch(`/api/verify-hash?report_id=${rid}`, { method: 'POST' });
-        const data = await res.json();
-        if (data.verified) {
-          btn.textContent = '✓ Integrity Confirmed — SHA-256 Match';
-          btn.style.background = 'rgba(34,197,94,0.2)';
-        } else {
-          btn.textContent = '✗ Verification Failed';
-          btn.style.cssText = 'background:rgba(239,68,68,0.12);color:var(--red);border-color:rgba(239,68,68,0.25)';
-        }
-        document.getElementById('feed-msg').textContent =
-          data.verified ? `Integrity verified: ${rid}` : `Verification failed for ${rid}`;
-      } catch {
-        btn.textContent = '⚠ Network Error';
-      }
-      setTimeout(() => {
-        btn.textContent = '✓ Verify Integrity';
-        btn.style.cssText = '';
-        btn.disabled = false;
-      }, 3500);
-    }
-
-    // ═══════════════════════════════════════════════
-    // WEBSOCKET
-    // ═══════════════════════════════════════════════
-    function setWsState(connected) {
-      const dot = document.getElementById('ws-dot');
-      const lbl = document.getElementById('ws-lbl');
-      dot.className = 'ws-dot' + (connected ? '' : ' off');
-      lbl.textContent = connected ? 'LIVE' : 'CONNECTING...';
-    }
-
-    function connectWS() {
-      const ws = new WebSocket(`ws://${window.location.host}/ws`);
-
-      ws.onopen = () => {
-        setWsState(true);
-        document.getElementById('feed-msg').textContent = 'WebSocket connected — receiving live data from backend';
-        if (wsTimer) { clearTimeout(wsTimer); wsTimer = null; }
-      };
-
-      ws.onmessage = (ev) => {
-        const msg = JSON.parse(ev.data);
-
-        // ── TELEMETRY ──────────────────────────────
-        if (msg.type === 'telemetry') {
-          procs = (msg.data || []).map(p => ({
-            pid: p.pid,
-            ppid: p.ppid,
-            name: p.name,
-            score: p.anomaly_score !== undefined ? p.anomaly_score : (p.cpu_percent || 0) / 100,
-            remote_hosts: p.remote_hosts || []
-          }));
-
-          const total = procs.length;
-          const anom = procs.filter(p => p.score > 0.75).length;
-          const high = procs.filter(p => p.score > 0.85).length;
-          const bc = msg.tx_count || 0;
-
-          updateCards(total, anom, high, bc);
-          rebuildAnomTable();
-
-          if (msg.feed_msg)
-            document.getElementById('feed-msg').textContent = msg.feed_msg;
-
-          // ── ALERT ──────────────────────────────────
-        } else if (msg.type === 'alert') {
-          const incId = addIncident(msg);
-          addTimelineEvent(msg, incId);
-          addBcRecord(msg, incId);
-
-          document.getElementById('feed-msg').textContent = msg.msg || '';
-
-          if (msg.tx_count !== undefined) {
-            document.getElementById('sc-bc').textContent = msg.tx_count;
-            prevBc = msg.tx_count;
-          }
-        } else if (msg.type === 'auto_train') {
-          const valEl = document.getElementById('sys-train-val');
-          if (valEl) {
-            valEl.style.color = 'var(--green)';
-            valEl.innerHTML = `<div class="sys-dot"></div>${msg.timestamp}`;
-          }
-          document.getElementById('feed-msg').textContent = `Continuous Learning cycle complete — Model updated (Loss: ${msg.loss.toFixed(4)})`;
-
-          trainHistory.unshift({ ts: msg.timestamp, loss: msg.loss });
-          if (trainHistory.length > 5) trainHistory.pop();
-          rebuildTrainHistory();
-
-        } else if (msg.type === 'packets') {
-          updatePacketPanel(msg.packets, msg.stats);
-        }
-      };
-
-      ws.onclose = () => {
-        setWsState(false);
-        document.getElementById('feed-msg').textContent =
-          'WebSocket disconnected — reconnecting in 3 seconds...';
-        wsTimer = setTimeout(connectWS, 3000);
-      };
-
-      ws.onerror = () => ws.close();
-
-      return ws;
-    }
-
-    connectWS();
-
-    // ═══════════════════════════════════════════════
-    // ACTION BUTTONS
-    // ═══════════════════════════════════════════════
-    // ═══════════════════════════════════════════════
-    // PACKET CAPTURE
-    // ═══════════════════════════════════════════════
-    let _pktPanelOpen = false;
-    let _pktSeenNos   = new Set();
-
-    const PROTO_COLORS = {
-      HTTP: '#38bdf8', HTTPS: '#818cf8', DNS: '#c084fc',
-      TCP:  '#34d399', UDP:  '#22d3ee', ICMP: '#fb923c',
-      SSH:  '#f59e0b', SMB:  '#f87171', RDP: '#f87171',
-    };
-
-    function protoClass(p) {
-      return PROTO_COLORS[p] ? `pkt-${p}` : 'pkt-default';
-    }
-
-    function fmtBytes(b) {
-      if (b < 1024)      return b + ' B';
-      if (b < 1048576)   return (b/1024).toFixed(1) + ' KB';
-      return (b/1048576).toFixed(2) + ' MB';
-    }
-
-    function openPacketPanel() {
-      _pktPanelOpen = true;
-      document.getElementById('pkt-panel').classList.add('open');
-    }
-
-    function togglePacketPanel() {
-      _pktPanelOpen = false;
-      document.getElementById('pkt-panel').classList.remove('open');
-    }
-
-    function updatePacketPanel(packets, stats) {
-      // Stats bar + card
-      document.getElementById('pkt-pps').textContent   = stats.pps + ' pkt/s';
-      document.getElementById('pkt-kbps').textContent  = stats.kbps + ' KB/s';
-      document.getElementById('pkt-total-bytes').textContent = fmtBytes(stats.bytes);
-      document.getElementById('pkt-badge').textContent = stats.total + ' pkts';
-      document.getElementById('sc-pkt').textContent    = stats.pps;
-      document.getElementById('sc-pkt-d').textContent  = stats.kbps + ' KB/s · click to open';
-
-      // Protocol distribution chips
-      const protoCounts = {};
-      packets.forEach(p => { protoCounts[p.proto] = (protoCounts[p.proto] || 0) + 1; });
-      const bar = document.getElementById('pkt-proto-bar');
-      bar.innerHTML = Object.entries(protoCounts)
-        .sort((a,b) => b[1]-a[1])
-        .map(([proto, count]) => {
-          const col = PROTO_COLORS[proto] || '#94a3b8';
-          return `<span class="proto-chip" style="background:${col}18;border:1px solid ${col}44;color:${col}">
-            ${proto} <span style="opacity:.7">${count}</span></span>`;
-        }).join('');
-
-      // New rows only
-      const newPkts = packets.filter(p => !_pktSeenNos.has(p.no));
-      if (!newPkts.length) return;
-
-      const empty = document.getElementById('pkt-empty');
-      if (empty) empty.style.display = 'none';
-
-      const tbody = document.getElementById('pkt-tbody');
-      newPkts.forEach(p => {
-        _pktSeenNos.add(p.no);
-        const src  = p.sport ? `${p.src}:${p.sport}` : p.src;
-        const dst  = p.dport ? `${p.dst}:${p.dport}` : p.dst;
-        const cls  = protoClass(p.proto);
-        const tr   = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="color:var(--text3)">${p.no}</td>
-          <td style="color:var(--text2)">${p.ts}</td>
-          <td>${src}</td>
-          <td>${dst}</td>
-          <td class="${cls}" style="font-weight:600">${p.proto}</td>
-          <td style="color:var(--text2)">${p.size}</td>
-          <td style="color:var(--text2);max-width:200px">${p.info || '—'}</td>`;
-        tbody.prepend(tr);
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════
+// TAB NAVIGATION
+// ═══════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-pane').forEach(p =>
+    p.classList.toggle('active', p.id === 'tab-' + name));
+}
+document.querySelectorAll('.tab-btn').forEach(btn =>
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let procs          = [];
+let blkNum         = 1200;
+let currentReport  = null;
+let recentAlerts   = [];
+let anomalyRecords = [];
+let nodePositions  = {};
+let animFrame      = 0;
+
+function scoreColor(s) {
+  if (s > 0.75) return '#f87171';
+  if (s > 0.40) return '#fbbf24';
+  return '#4ade80';
+}
+function scoreLabel(s) {
+  if (s > 0.75) return 'CRITICAL';
+  if (s > 0.40) return 'WARNING';
+  return 'NORMAL';
+}
+function scorePillClass(s) {
+  if (s > 0.75) return 'pill-critical';
+  if (s > 0.40) return 'pill-warning';
+  return 'pill-normal';
+}
+function scoreRowClass(s) {
+  if (s > 0.75) return 'row-critical';
+  if (s > 0.40) return 'row-warning';
+  return 'row-normal';
+}
+
+// ═══════════════════════════════════════════
+// WEBSOCKET
+// ═══════════════════════════════════════════
+function connectWS() {
+  const ws  = new WebSocket(`ws://${window.location.host}/ws`);
+  const dot = document.getElementById('ws-dot');
+  const lbl = document.getElementById('ws-lbl');
+
+  ws.onopen  = () => { dot.classList.remove('off'); lbl.textContent = 'LIVE'; };
+  ws.onclose = () => {
+    dot.classList.add('off'); lbl.textContent = 'DISCONNECTED';
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+
+    if (msg.type === 'telemetry') {
+      procs = msg.data.map(p => {
+        const score = p.anomaly_score !== undefined ? p.anomaly_score : p.cpu_percent / 100;
+        return { pid:p.pid, ppid:p.ppid, name:p.name, score, a: score > 0.75 };
       });
 
-      // Keep table from growing unbounded
-      while (tbody.rows.length > 200) tbody.deleteRow(tbody.rows.length - 1);
-    }
+      if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
+      if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
+      if (msg.edge_count !== undefined) {
+        document.getElementById('hud-e').textContent    = msg.edge_count;
+        document.getElementById('fm-g').textContent     = `${procs.length}N·${msg.edge_count}E`;
+        document.getElementById('ov-edges').textContent = msg.edge_count;
+      }
+      if (msg.loss !== undefined) {
+        document.getElementById('hud-l').textContent      = msg.loss.toFixed(4);
+        document.getElementById('fm-l').textContent       = msg.loss.toFixed(4);
+        document.getElementById('ov-loss').textContent    = msg.loss.toFixed(4);
+        document.getElementById('ov-mm-loss').textContent = msg.loss.toFixed(4);
+        document.getElementById('ov-loss-bar').style.width = Math.min(msg.loss * 100, 100) + '%';
+      }
+      if (msg.feed_msg)
+        document.getElementById('ftr-feed').textContent = '> ' + msg.feed_msg;
 
-    function highlightPanel(panelId, color) {
-      const el = document.getElementById(panelId);
-      if (!el) return;
-      el.style.setProperty('--flash-color', color);
-      el.classList.remove('panel-flash');
-      // Force reflow so re-clicking the same card restarts the animation
-      void el.offsetWidth;
-      el.classList.add('panel-flash');
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      el.addEventListener('animationend', () => el.classList.remove('panel-flash'), { once: true });
-    }
+      const aScore = msg.anomaly_score ?? 0;
+      anomChart.data.datasets[0].data.push(aScore);
+      anomChart.data.datasets[0].data.shift();
+      anomChart.data.datasets[0].borderColor =
+        aScore > 0.75 ? '#f87171' : aScore > 0.40 ? '#fbbf24' : '#4ade80';
+      anomChart.data.datasets[0].backgroundColor =
+        aScore > 0.75 ? 'rgba(239,68,68,0.07)' : aScore > 0.40 ? 'rgba(245,158,11,0.06)' : 'rgba(34,197,94,0.06)';
+      anomChart.update('none');
 
-    async function injectTestAttack(btn) {
-      const orig = btn.textContent;
-      btn.textContent = '⏳ Injecting...';
-      btn.disabled = true;
-      try {
-        await fetch('/api/inject-test-anomaly', { method: 'POST' });
-      } catch (e) { console.error(e); }
-      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
-    }
+      const lat = msg.latency_ms ?? 0;
+      latChart.data.datasets[0].data.push(lat);
+      latChart.data.datasets[0].data.shift();
+      latChart.data.datasets[0].backgroundColor = lat < 500 ? '#4ade80' : '#f87171';
+      latChart.update('none');
 
-    async function clearCooldowns() {
-      const btn = document.querySelector('.clear-btn');
-      btn.textContent = 'Clearing...';
-      try {
-        await fetch('/api/clear-cooldowns', { method: 'POST' });
-        document.getElementById('feed-msg').textContent =
-          'Cooldowns cleared — all PIDs can trigger alerts again';
-        setTimeout(() => { btn.textContent = '↺ Clear Cooldowns'; }, 2000);
-      } catch {
-        btn.textContent = '↺ Clear Cooldowns';
+      updateUI();
+
+    } else if (msg.type === 'alert') {
+      addBlock(msg);
+      addAnomalyRecord(msg);
+      if (msg.is_critical) { updateAlertStrip(msg.msg); addRecentAlert(msg); }
+      logFeed(msg.msg);
+      if (msg.tx_count   !== undefined) syncCommits(msg.tx_count);
+      if (msg.latency_ms !== undefined) syncLatency(msg.latency_ms);
+      if (msg.report) showReport(msg.report, msg);
+    } else if (msg.type === 'packets') {
+      updatePacketTab(msg.packets, msg.stats);
+    }
+  };
+}
+connectWS();
+
+function syncCommits(v) {
+  ['h-commits','bc-commits','bc-commits-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = v;
+  });
+}
+function syncLatency(v) {
+  document.getElementById('h-lat').textContent  = v + 'ms';
+  document.getElementById('ov-lat').textContent = v + 'ms';
+}
+
+// ═══════════════════════════════════════════
+// UI UPDATE
+// ═══════════════════════════════════════════
+function updateUI() { updateStats(); buildProcList(); }
+
+function updateStats() {
+  const n     = procs.length;
+  const anoms = procs.filter(p => p.score > 0.75).length;
+  const ratio = n > 0 ? (anoms / n * 100) : 0;
+
+  ['h-procs','ov-procs'].forEach(id => document.getElementById(id).textContent = n);
+  ['h-anom','ov-anom'].forEach(id => document.getElementById(id).textContent = anoms);
+  document.getElementById('pg-anom-badge').textContent = `${anoms} ANOM`;
+  document.getElementById('hud-n').textContent         = n;
+  document.getElementById('ov-nodes').textContent      = n;
+  document.getElementById('ov-mm-ratio').textContent   = ratio.toFixed(1) + '%';
+  document.getElementById('ov-ratio-bar').style.width  = ratio + '%';
+
+  const s     = document.getElementById('ov-status-big');
+  const badge = document.getElementById('sys-status-badge');
+  if (anoms > 0) {
+    s.textContent = 'THREAT DETECTED'; s.className = 'sys-status-big threat';
+    badge.textContent = 'THREAT'; badge.className = 'badge b-red';
+  } else {
+    s.textContent = 'OPERATIONAL'; s.className = 'sys-status-big ok';
+    badge.textContent = 'OPERATIONAL'; badge.className = 'badge b-green';
+  }
+}
+
+function updateAlertStrip(msg) {
+  const el = document.getElementById('alert-txt');
+  el.textContent = msg + ' | ' + el.textContent;
+}
+function logFeed(msg) { document.getElementById('ftr-feed').textContent = '> ' + msg; }
+
+function addRecentAlert(msg) {
+  const tstr = new Date().toTimeString().slice(0,8);
+  recentAlerts.unshift({
+    ts: tstr, text: msg.msg, pid: msg.pid, score: msg.score || 0,
+    process: msg.process || 'unknown', tx_id: msg.tx_id || '—',
+    is_critical: msg.is_critical || false,
+    saved_to_disk: msg.saved_to_disk || false,
+  });
+  if (recentAlerts.length > 8) recentAlerts.pop();
+  document.getElementById('alerts-badge').textContent = `${recentAlerts.length} alerts`;
+  document.getElementById('ov-alerts-list').innerHTML = recentAlerts.map((a, i) => `
+    <div class="alert-item" onclick="openAlertModal(${i})" title="Click to view full alert details">
+      <div class="ai-time">${a.ts} · PID ${a.pid}</div>
+      <div class="ai-msg" style="color:${a.score > 0.75 ? 'var(--red)' : 'var(--amber)'}">${a.text}</div>
+    </div>`).join('');
+}
+
+function openAlertModal(idx) {
+  const a = recentAlerts[idx];
+  if (!a) return;
+  const col = a.score > 0.75 ? 'var(--red)' : 'var(--amber)';
+  const sevClass = a.score > 0.75 ? 'sev-critical' : 'sev-warning';
+  const sevLabel = a.score > 0.75 ? 'CRITICAL' : 'WARNING';
+
+  document.getElementById('amd-body').innerHTML = `
+    <div class="amd-row">
+      <span class="amd-lbl">Severity</span>
+      <span class="amd-val"><span class="amd-severity ${sevClass}">${sevLabel}</span></span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Time</span>
+      <span class="amd-val">${a.ts}</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Process</span>
+      <span class="amd-val" style="color:var(--cyan)">${a.process}</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">PID</span>
+      <span class="amd-val" style="color:#fbbf24">${a.pid}</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Anomaly Score</span>
+      <span class="amd-val" style="color:${col};font-size:16px;font-weight:700">${a.score.toFixed(4)}</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Threshold</span>
+      <span class="amd-val">0.75 (GNN reconstruction error)</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Blockchain TX</span>
+      <span class="amd-val" style="color:var(--purple);font-size:10px">${a.tx_id}</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Persisted</span>
+      <span class="amd-val">${a.saved_to_disk
+        ? '<span style="color:#f87171">● Saved to disk</span>'
+        : '<span style="color:var(--text3)">○ Memory only</span>'}</span>
+    </div>
+    <div class="amd-row">
+      <span class="amd-lbl">Message</span>
+      <span class="amd-val" style="color:${col};text-align:left">${a.text}</span>
+    </div>`;
+
+  document.getElementById('alert-modal-backdrop').classList.add('open');
+}
+
+function closeAlertModal(e) {
+  if (e && e.target !== document.getElementById('alert-modal-backdrop')) return;
+  document.getElementById('alert-modal-backdrop').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// CLOCK / EPOCH
+// ═══════════════════════════════════════════
+let epoch = 0;
+setInterval(() => { epoch++; document.getElementById('h-epoch').textContent = epoch; }, 10000);
+
+// ═══════════════════════════════════════════
+// PROCESS LIST
+// ═══════════════════════════════════════════
+function buildProcList() {
+  const el = document.getElementById('pg-proc-list');
+  el.innerHTML = procs.map(p => {
+    const col = scoreColor(p.score);
+    return `<div class="pg-proc-item ${p.a ? 'pg-anom' : ''}" data-pid="${p.pid}"
+      title="PID ${p.pid} (PPID: ${p.ppid}) · Score: ${p.score.toFixed(4)} · ${scoreLabel(p.score)} — click to inspect in Node Inspector">
+      <div class="pg-dot" style="background:${col}"></div>
+      <div class="pg-info">
+        <div class="pg-name">${p.name}</div>
+        <div class="pg-meta">PID ${p.pid} · PPID ${p.ppid}</div>
+      </div>
+      <div class="pg-score" style="color:${col}">${p.score.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.pg-proc-item').forEach(item =>
+    item.addEventListener('click', () => {
+      const proc = procs.find(p => p.pid === parseInt(item.dataset.pid));
+      if (proc) showNodeDetail(proc);
+    }));
+}
+
+// ═══════════════════════════════════════════
+// NODE DETAIL
+// ═══════════════════════════════════════════
+function showNodeDetail(proc) {
+  const col = scoreColor(proc.score);
+  document.getElementById('pg-node-detail').innerHTML = `
+    <div class="nd-field">
+      <div class="nd-lbl">Process Name</div>
+      <div class="nd-val" style="color:var(--cyan)">${proc.name}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">PID</div>
+      <div class="nd-val" style="color:#fbbf24">${proc.pid}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">Parent PID</div>
+      <div class="nd-val" style="color:var(--blue)">${proc.ppid}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">Anomaly Score</div>
+      <div class="nd-val" style="color:${col}">${proc.score.toFixed(4)}</div>
+      <div class="nd-bar" style="background:${col};width:${proc.score*100}%;opacity:.7"></div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">Status</div>
+      <div class="nd-val" style="color:${col}">${scoreLabel(proc.score)}</div>
+    </div>
+    <div class="nd-field">
+      <div class="nd-lbl">Alert Threshold</div>
+      <div class="nd-val" style="color:var(--text2)">0.75</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════
+// GRAPH CANVAS
+// ═══════════════════════════════════════════
+const gc   = document.getElementById('graph-canvas');
+const gctx = gc.getContext('2d');
+
+function drawGraph() {
+  const rect = gc.parentElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  gc.width = rect.width; gc.height = rect.height;
+  const W = gc.width, H = gc.height, ctx = gctx;
+  ctx.clearRect(0, 0, W, H);
+  animFrame++;
+
+  if (procs.length === 0) {
+    ctx.fillStyle = 'rgba(148,163,184,0.25)';
+    ctx.font = '12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Awaiting process data...', W/2, H/2);
+    return;
+  }
+
+  nodePositions = {};
+  const cx = W/2, cy = H/2, rx = W*0.34, ry = H*0.34;
+  procs.forEach((p, i) => {
+    const angle  = (i / procs.length) * Math.PI * 2 - Math.PI / 2;
+    const wobble = Math.sin(animFrame * 0.018 + i * 0.8) * 10;
+    nodePositions[p.pid] = {
+      x: cx + Math.cos(angle) * (rx + wobble),
+      y: cy + Math.sin(angle) * (ry + wobble)
+    };
+  });
+
+  procs.forEach(p => {
+    if (!nodePositions[p.pid] || !nodePositions[p.ppid]) return;
+    const f = nodePositions[p.ppid], t = nodePositions[p.pid];
+    ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(t.x, t.y);
+    ctx.strokeStyle = p.a ? 'rgba(239,68,68,0.4)' : 'rgba(148,163,184,0.12)';
+    ctx.lineWidth   = p.a ? 1.5 : 1;
+    ctx.stroke();
+  });
+
+  ctx.font = '10px Inter, sans-serif'; ctx.textAlign = 'center';
+  procs.forEach(p => {
+    const pt = nodePositions[p.pid]; if (!pt) return;
+    const col = scoreColor(p.score), r = p.a ? 9 : 6;
+    if (p.a) { ctx.shadowBlur = 14; ctx.shadowColor = col; }
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, r, 0, Math.PI*2);
+    ctx.fillStyle = col; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(148,163,184,0.55)';
+    ctx.fillText(p.name.slice(0,10), pt.x, pt.y + r + 13);
+  });
+}
+setInterval(drawGraph, 50);
+
+gc.addEventListener('click', e => {
+  const rect = gc.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let closest = null, minDist = 26;
+  Object.entries(nodePositions).forEach(([pid, pos]) => {
+    const d = Math.hypot(pos.x - mx, pos.y - my);
+    if (d < minDist) { minDist = d; closest = parseInt(pid); }
+  });
+  if (closest !== null) {
+    const proc = procs.find(p => p.pid === closest);
+    if (proc) { showNodeDetail(proc); switchTab('graph'); }
+  }
+});
+
+// ═══════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════
+const anomChart = new Chart(document.getElementById('anom-chart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: Array(60).fill(''),
+    datasets: [
+      { data:Array(60).fill(0), borderColor:'#4ade80', backgroundColor:'rgba(34,197,94,0.06)',
+        fill:true, tension:0.4, borderWidth:2, pointRadius:0 },
+      { data:Array(60).fill(0.75), borderColor:'rgba(239,68,68,0.5)',
+        borderWidth:1.5, borderDash:[6,4], fill:false, pointRadius:0, tension:0 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => `Score: ${ctx.raw.toFixed(4)}` } } },
+    scales:{
+      x:{ display:false },
+      y:{ min:0, max:1,
+        grid:{ color:'rgba(255,255,255,0.04)' },
+        ticks:{ color:'rgba(148,163,184,0.6)', font:{ family:'Inter', size:10 }, stepSize:0.25 },
+        border:{ color:'rgba(255,255,255,0.07)' }
       }
     }
+  }
+});
 
-    // ═══════════════════════════════════════════════
-    // CHATBOT WIDGET
-    // ═══════════════════════════════════════════════
-    function toggleChat() {
-      const win = document.getElementById('chat-window');
-      win.classList.toggle('open');
-      if (win.classList.contains('open')) {
-        document.getElementById('chat-input-field').focus();
-      } else {
-        // Stop mic if chat is closed while recording
-        if (isRecording) {
-          clearTimeout(silenceTimer);
-          try { recognition.stop(); } catch(e) {}
-          stopMic();
-        }
-        window.speechSynthesis && window.speechSynthesis.cancel();
+const latChart = new Chart(document.getElementById('lat-chart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: Array(60).fill(''),
+    datasets:[{ data:Array(60).fill(0), backgroundColor:'#4ade80', borderRadius:2, borderSkipped:false }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx => `${ctx.raw}ms` } } },
+    scales:{
+      x:{ display:false },
+      y:{ min:0, max:500,
+        grid:{ color:'rgba(255,255,255,0.04)' },
+        ticks:{ color:'rgba(148,163,184,0.6)', font:{ family:'Inter', size:10 } },
+        border:{ color:'rgba(255,255,255,0.07)' }
       }
     }
+  }
+});
 
-    // ─── MARKDOWN RENDERER ───
-    // Converts Claude's markdown to clean HTML (bold, italic, headers, tables, code, lists)
-    function renderMarkdown(text) {
-      let html = text
-        // Escape HTML entities first to prevent XSS
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
+// ═══════════════════════════════════════════
+// ANOMALY TABLE
+// ═══════════════════════════════════════════
+function addAnomalyRecord(msg) {
+  const tstr = new Date().toTimeString().slice(0,8);
+  anomalyRecords.unshift({ ts:tstr, pid:msg.pid, process:msg.process||'unknown', score:msg.score||0 });
+  if (anomalyRecords.length > 100) anomalyRecords.pop();
+  rebuildAnomalyTable();
+}
+function rebuildAnomalyTable() {
+  document.getElementById('ad-count-badge').textContent = `${anomalyRecords.length} EVENTS`;
+  const body = document.getElementById('anom-table-body');
+  if (!anomalyRecords.length) {
+    body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:24px">Waiting for detections...</td></tr>';
+    return;
+  }
+  body.innerHTML = anomalyRecords.map(r => {
+    const col = scoreColor(r.score);
+    return `<tr class="${scoreRowClass(r.score)}" title="${r.process} (PID ${r.pid}) detected at ${r.ts} with score ${r.score.toFixed(4)} — ${scoreLabel(r.score)}">
+      <td style="color:var(--text2)">${r.ts}</td>
+      <td style="color:#fbbf24">${r.pid}</td>
+      <td>${r.process}</td>
+      <td><span style="color:${col};font-weight:600">${r.score.toFixed(4)}</span></td>
+      <td><span class="status-pill ${scorePillClass(r.score)}">${scoreLabel(r.score)}</span></td>
+    </tr>`;
+  }).join('');
+}
 
-        // Code blocks (``` ... ```)
-        .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:10px 12px;margin:6px 0;font-family:monospace;font-size:11px;overflow-x:auto;white-space:pre-wrap">$1</pre>')
+// ═══════════════════════════════════════════
+// BLOCKCHAIN LOG
+// ═══════════════════════════════════════════
+function addBlock(msg) {
+  blkNum++;
+  const log = document.getElementById('chain-log');
+  const placeholder = document.getElementById('bc-placeholder');
+  if (placeholder) placeholder.remove();
 
-        // Inline code (`code`)
-        .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px">$1</code>')
+  const div = document.createElement('div');
+  div.className = `bc-block ${msg.is_critical ? 'anom-blk' : 'norm-blk'}`;
+  div.title = `Block #${blkNum} — PID ${msg.pid} (${msg.process||'unknown'}) · Score ${(msg.score||0).toFixed(4)} · ${msg.is_critical ? 'CRITICAL — click to view forensic report' : 'Normal event'}`;
 
-        // ### H3
-        .replace(/^### (.+)$/gm, '<div style="font-weight:700;font-size:12px;color:var(--blue);margin:10px 0 4px">$1</div>')
+  const tstr  = new Date().toTimeString().slice(0,8);
+  const score = msg.score !== undefined ? msg.score.toFixed(4) : '—';
+  const diskTag = msg.saved_to_disk
+    ? `<span style="color:var(--red)">● Persisted to disk</span>`
+    : `<span style="color:var(--text3)">○ Memory only</span>`;
 
-        // ## H2
-        .replace(/^## (.+)$/gm, '<div style="font-weight:700;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);padding-bottom:4px;margin:10px 0 5px">$1</div>')
+  div.innerHTML = `
+    <div class="bc-blk-top">
+      <span class="bc-blk-num">Block #${blkNum}</span>
+      <span class="bc-blk-time">${tstr}</span>
+    </div>
+    <div class="bc-blk-hash">${msg.tx_id || '—'}</div>
+    <div class="bc-blk-row">
+      <span class="bc-blk-proc">PID ${msg.pid} · ${msg.process || 'unknown'}</span>
+      <span class="bc-blk-score" style="color:${msg.is_critical ? 'var(--red)' : '#4ade80'}">${score}</span>
+    </div>
+    <div class="bc-blk-tag">${diskTag}</div>`;
 
-        // # H1
-        .replace(/^# (.+)$/gm, '<div style="font-weight:700;font-size:14px;color:var(--text);margin:10px 0 5px">$1</div>')
+  if (msg.report) {
+    div.style.cursor = 'pointer';
+    div.addEventListener('click', () => { showReport(msg.report, msg); switchTab('forensic'); });
+  }
+  log.insertBefore(div, log.firstChild);
+}
 
-        // **bold**
-        .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text);font-weight:600">$1</strong>')
-
-        // *italic*
-        .replace(/\*(.+?)\*/g, '<em style="color:var(--text2)">$1</em>')
-
-        // Markdown table rows (| col | col |)
-        .replace(/^\|(.+)\|$/gm, (match, cells) => {
-          const isSeparator = /^[\s|:\-]+$/.test(match);
-          if (isSeparator) return '';
-          const tds = cells.split('|').map(c =>
-            `<td style="padding:5px 10px;border:1px solid rgba(255,255,255,0.08);font-size:11px">${c.trim()}</td>`
-          ).join('');
-          return `<tr>${tds}</tr>`;
-        })
-
-        // Wrap consecutive <tr> blocks in a table
-        .replace(/(<tr>.*<\/tr>\n?)+/gs, m =>
-          `<table style="border-collapse:collapse;width:100%;margin:8px 0;font-size:11px">${m}</table>`
-        )
-
-        // Bullet points (- item or * item)
-        .replace(/^[\-\*] (.+)$/gm, '<li style="margin:3px 0;padding-left:4px">$1</li>')
-        .replace(/(<li[^>]*>.*<\/li>\n?)+/gs, m =>
-          `<ul style="margin:6px 0;padding-left:18px;list-style:disc">${m}</ul>`
-        )
-
-        // Numbered list (1. item)
-        .replace(/^\d+\. (.+)$/gm, '<li style="margin:3px 0;padding-left:4px">$1</li>')
-
-        // Horizontal rule (---)
-        .replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:8px 0">')
-
-        // Line breaks
-        .replace(/\n\n/g, '<br><br>')
-        .replace(/\n/g, '<br>');
-
-      return html;
-    }
-
-    function appendChatMsg(text, sender) {
-      const msgs = document.getElementById('chat-messages');
-      const div = document.createElement('div');
-      div.className = `chat-msg msg-${sender}`;
-      if (sender === 'ai') {
-        div.innerHTML = renderMarkdown(text);
-        // Add stop-speech button below each AI answer
-        const stopBtn = document.createElement('button');
-        stopBtn.className = 'tts-stop-btn';
-        stopBtn.innerHTML = '&#9632; Stop Speech';
-        stopBtn.addEventListener('click', () => {
-          window.speechSynthesis && window.speechSynthesis.cancel();
-          stopBtn.innerHTML = '&#9632; Stopped';
-          stopBtn.classList.add('done');
-        });
-        div.appendChild(stopBtn);
-      } else {
-        div.textContent = text;
-      }
-      msgs.appendChild(div);
-      msgs.scrollTop = msgs.scrollHeight;
-      return div;
-    }
-
-    // ─── SPEECH RECOGNITION (STT) ───
-    let recognition  = null;
-    let isRecording  = false;
-    let silenceTimer = null;
-    let finalText    = '';
-
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition = new SpeechRecognition();
-      recognition.continuous     = true;   // keep mic open until manually stopped
-      recognition.interimResults = true;   // stream partial words into input field
-      recognition.lang           = 'en-US';
-
-      recognition.onresult = (event) => {
-        let interim = '';
-        finalText   = '';
-
-        // Accumulate all results — final chunks + any in-progress interim chunk
-        for (let i = 0; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            finalText += event.results[i][0].transcript + ' ';
-          } else {
-            interim += event.results[i][0].transcript;
-          }
-        }
-
-        // Live-update input box so user sees words appearing as they speak
-        document.getElementById('chat-input-field').value = (finalText + interim).trim();
-
-        // After 1.5 s of silence following a confirmed word → auto-stop
-        if (finalText.trim()) {
-          clearTimeout(silenceTimer);
-          silenceTimer = setTimeout(() => recognition.stop(), 1500);
-        }
-      };
-
-      recognition.onerror = (e) => {
-        console.warn('[STT] Error:', e.error);
-        stopMic();
-      };
-
-      // onend fires after recognition.stop() — send whatever was captured
-      recognition.onend = () => {
-        stopMic();
-        const val = document.getElementById('chat-input-field').value.trim();
-        if (val) sendChatMessage();
-      };
-    }
-
-    function toggleMic() {
-      if (!recognition) {
-        alert('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
-        return;
-      }
-      if (isRecording) {
-        clearTimeout(silenceTimer);
-        recognition.stop();           // triggers onend → stopMic + send
-      } else {
-        finalText = '';
-        document.getElementById('chat-input-field').value = '';
-        document.getElementById('chat-mic-btn').classList.add('recording');
-        isRecording = true;
-        recognition.start();
-      }
-    }
-
-    function stopMic() {
-      clearTimeout(silenceTimer);
-      document.getElementById('chat-mic-btn').classList.remove('recording');
-      isRecording = false;
-    }
-
-    // ─── TEXT TO SPEECH (TTS) ───
-    function speakText(text, msgDiv) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance();
-        utterance.text = text.replace(/[*#_`|]/g, '').replace(/\s+/g, ' ').trim();
-        utterance.lang = 'en-US';
-        utterance.rate = 1.0;
-        // When speech ends naturally, dim the stop button
-        utterance.onend = () => {
-          if (msgDiv) {
-            const btn = msgDiv.querySelector('.tts-stop-btn');
-            if (btn) { btn.innerHTML = '&#9632; Done'; btn.classList.add('done'); }
-          }
-        };
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    let isSendingChat = false;
-    async function sendChatMessage() {
-      if (isSendingChat) return; // Lock to prevent multi-sends
-
-      const input = document.getElementById('chat-input-field');
-      const btn = document.getElementById('chat-send-btn');
-      const text = input.value.trim();
-      if (!text) return;
-
-      isSendingChat = true;
-      appendChatMsg(text, 'user');
-      input.value = '';
-      btn.disabled = true;
-
-      try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
-        });
-        const data = await res.json();
-        const msgDiv = appendChatMsg(data.reply, 'ai');
-        speakText(data.reply, msgDiv); // Read the answer out loud
-      } catch (e) {
-        appendChatMsg('⚠ Error connecting to AI backend.', 'ai');
-      }
-      btn.disabled = false;
-      isSendingChat = false;
-      input.focus();
-    }
-
-    // ESC closes modal
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') {
-        closeModal();
-        closeModelModal();
-      }
+// ═══════════════════════════════════════════
+// FORENSIC REPORT VIEWER
+// ═══════════════════════════════════════════
+function syntaxHighlight(json) {
+  return JSON.stringify(json, null, 2).replace(
+    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+    match => {
+      let cls = 'num';
+      if (/^"/.test(match)) cls = /:$/.test(match) ? 'key' : 'str';
+      else if (/true|false/.test(match)) cls = 'bool';
+      return `<span class="${cls}">${match}</span>`;
     });
+}
 
-    // Stop mic and TTS on page refresh / close / navigate away
-    window.addEventListener('beforeunload', () => {
-      if (isRecording) {
-        try { recognition.stop(); } catch(e) {}
-        stopMic();
-      }
+function showReport(report, msg) {
+  currentReport = report;
+  document.getElementById('fr-empty').style.display = 'none';
+  const el = document.getElementById('report-json');
+  el.style.display = 'block';
+  el.innerHTML = syntaxHighlight(report);
+  document.getElementById('fr-id').textContent  = report.report_id || '—';
+  document.getElementById('fr-ts').textContent  = report.timestamp || new Date().toTimeString().slice(0,8);
+  document.getElementById('fr-pid').textContent = msg ? msg.pid : '—';
+  const hash = report.sha256 || report.hash || '';
+  document.getElementById('fr-hash').textContent = hash ? hash.slice(0,20) + '…' : '—';
+  const statusEl = document.getElementById('fr-status');
+  if (msg && msg.is_critical) {
+    statusEl.textContent = 'CRITICAL THREAT';
+    statusEl.style.cssText = 'color:#f87171;background:rgba(239,68,68,0.1);';
+  } else {
+    statusEl.textContent = 'ANOMALY DETECTED';
+    statusEl.style.cssText = 'color:#fbbf24;background:rgba(245,158,11,0.1);';
+  }
+}
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  if (!currentReport) return;
+  navigator.clipboard.writeText(JSON.stringify(currentReport, null, 2)).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'COPIED!'; btn.style.color = '#4ade80';
+    setTimeout(() => { btn.textContent = 'COPY TO CLIPBOARD'; btn.style.color = ''; }, 2000);
+  });
+});
+
+// ═══════════════════════════════════════════
+// PACKET SNIFFER
+// ═══════════════════════════════════════════
+let _pktSeenNos = new Set();
+
+const PROTO_COLORS = {
+  HTTP: '#38bdf8', HTTPS: '#818cf8', DNS: '#c084fc',
+  TCP:  '#34d399', UDP:  '#22d3ee', ICMP: '#fb923c',
+  SSH:  '#f59e0b', SMB:  '#f87171', RDP: '#f87171',
+};
+
+function protoClass(p) { return PROTO_COLORS[p] ? `pkt-${p}` : 'pkt-default'; }
+
+function fmtBytes(b) {
+  if (b < 1024)    return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+
+function updatePacketTab(packets, stats) {
+  // Update stats bar
+  document.getElementById('pkt-pps').textContent         = stats.pps;
+  document.getElementById('pkt-kbps').textContent        = stats.kbps + ' KB/s';
+  document.getElementById('pkt-total-bytes').textContent = fmtBytes(stats.bytes);
+  document.getElementById('pkt-badge').textContent       = stats.total + ' pkts';
+
+  // Protocol distribution chips
+  const protoCounts = {};
+  packets.forEach(p => { protoCounts[p.proto] = (protoCounts[p.proto] || 0) + 1; });
+  document.getElementById('pkt-proto-bar').innerHTML = Object.entries(protoCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([proto, count]) => {
+      const col = PROTO_COLORS[proto] || '#94a3b8';
+      return `<span class="proto-chip" style="background:${col}18;border:1px solid ${col}44;color:${col}"
+        title="${proto}: ${count} packets captured">${proto} <span style="opacity:.7">${count}</span></span>`;
+    }).join('');
+
+  // Insert only new packets
+  const newPkts = packets.filter(p => !_pktSeenNos.has(p.no));
+  if (!newPkts.length) return;
+
+  const empty = document.getElementById('pkt-empty');
+  if (empty) empty.style.display = 'none';
+
+  const tbody = document.getElementById('pkt-tbody');
+  newPkts.forEach(p => {
+    _pktSeenNos.add(p.no);
+    const src = p.sport ? `${p.src}:${p.sport}` : p.src;
+    const dst = p.dport ? `${p.dst}:${p.dport}` : p.dst;
+    const cls = protoClass(p.proto);
+    const tr  = document.createElement('tr');
+    tr.title  = `Packet #${p.no} — ${p.proto} — ${src} → ${dst} — ${p.size} bytes`;
+    tr.innerHTML = `
+      <td style="color:var(--text3)">${p.no}</td>
+      <td style="color:var(--text2)">${p.ts}</td>
+      <td>${src}</td>
+      <td>${dst}</td>
+      <td class="${cls}" style="font-weight:600">${p.proto}</td>
+      <td style="color:var(--text2)">${p.size}</td>
+      <td style="color:var(--text2)">${p.info || '—'}</td>`;
+    tbody.prepend(tr);
+  });
+
+  // Keep table from growing unbounded
+  while (tbody.rows.length > 200) tbody.deleteRow(tbody.rows.length - 1);
+}
+
+// ═══════════════════════════════════════════
+// INJECT TEST ATTACK
+// ═══════════════════════════════════════════
+async function injectTestAttack(btn) {
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Injecting...';
+  btn.disabled = true;
+  try {
+    await fetch('/api/inject-test-anomaly', { method: 'POST' });
+  } catch (e) { console.error(e); }
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+}
+
+// ═══════════════════════════════════════════
+// CHATBOT WIDGET
+// ═══════════════════════════════════════════
+function toggleChat() {
+  const win = document.getElementById('chat-window');
+  win.classList.toggle('open');
+  if (win.classList.contains('open')) {
+    document.getElementById('chat-input-field').focus();
+  } else {
+    if (isRecording) { clearTimeout(silenceTimer); try { recognition.stop(); } catch(e) {} stopMic(); }
+    window.speechSynthesis && window.speechSynthesis.cancel();
+  }
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```[\w]*\n?([\s\S]*?)```/g,'<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:10px 12px;margin:6px 0;font-family:monospace;font-size:11px;overflow-x:auto;white-space:pre-wrap">$1</pre>')
+    .replace(/`([^`]+)`/g,'<code style="background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px">$1</code>')
+    .replace(/^### (.+)$/gm,'<div style="font-weight:700;font-size:12px;color:var(--blue);margin:10px 0 4px">$1</div>')
+    .replace(/^## (.+)$/gm,'<div style="font-weight:700;font-size:13px;border-bottom:1px solid var(--border);padding-bottom:4px;margin:10px 0 5px">$1</div>')
+    .replace(/^# (.+)$/gm,'<div style="font-weight:700;font-size:14px;margin:10px 0 5px">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em style="color:var(--text2)">$1</em>')
+    .replace(/^[\-\*] (.+)$/gm,'<li style="margin:3px 0;padding-left:4px">$1</li>')
+    .replace(/(<li[^>]*>.*<\/li>\n?)+/gs, m => `<ul style="margin:6px 0;padding-left:18px;list-style:disc">${m}</ul>`)
+    .replace(/^---+$/gm,'<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:8px 0">')
+    .replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+function appendChatMsg(text, sender) {
+  const msgs = document.getElementById('chat-messages');
+  const div  = document.createElement('div');
+  div.className = `chat-msg msg-${sender}`;
+  if (sender === 'ai') {
+    div.innerHTML = renderMarkdown(text);
+    const stopBtn = document.createElement('button');
+    stopBtn.className = 'tts-stop-btn';
+    stopBtn.innerHTML = '&#9632; Stop Speech';
+    stopBtn.addEventListener('click', () => {
       window.speechSynthesis && window.speechSynthesis.cancel();
+      stopBtn.innerHTML = '&#9632; Stopped'; stopBtn.classList.add('done');
     });
-  </script>
-</body>
+    div.appendChild(stopBtn);
+  } else { div.textContent = text; }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
 
+// STT
+let recognition = null, isRecording = false, silenceTimer = null, finalText = '';
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-US';
+  recognition.onresult = (e) => {
+    let interim = ''; finalText = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    document.getElementById('chat-input-field').value = (finalText + interim).trim();
+    if (finalText.trim()) { clearTimeout(silenceTimer); silenceTimer = setTimeout(() => recognition.stop(), 1500); }
+  };
+  recognition.onerror = () => stopMic();
+  recognition.onend   = () => { stopMic(); const v = document.getElementById('chat-input-field').value.trim(); if (v) sendChatMessage(); };
+}
+function toggleMic() {
+  if (!recognition) { alert('Speech recognition not supported. Use Chrome or Edge.'); return; }
+  if (isRecording) { clearTimeout(silenceTimer); recognition.stop(); }
+  else { finalText = ''; document.getElementById('chat-input-field').value = ''; document.getElementById('chat-mic-btn').classList.add('recording'); isRecording = true; recognition.start(); }
+}
+function stopMic() { clearTimeout(silenceTimer); document.getElementById('chat-mic-btn').classList.remove('recording'); isRecording = false; }
+
+function speakText(text, msgDiv) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance();
+    u.text = text.replace(/[*#_`|]/g,'').replace(/\s+/g,' ').trim();
+    u.lang = 'en-US'; u.rate = 1.0;
+    u.onend = () => { if (msgDiv) { const b = msgDiv.querySelector('.tts-stop-btn'); if (b) { b.innerHTML='&#9632; Done'; b.classList.add('done'); } } };
+    window.speechSynthesis.speak(u);
+  }
+}
+
+let isSendingChat = false;
+async function sendChatMessage() {
+  if (isSendingChat) return;
+  const input = document.getElementById('chat-input-field');
+  const btn   = document.getElementById('chat-send-btn');
+  const text  = input.value.trim();
+  if (!text) return;
+  isSendingChat = true;
+  appendChatMsg(text, 'user');
+  input.value = ''; btn.disabled = true;
+  try {
+    const res  = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message: text })
+    });
+    const data = await res.json();
+    const msgDiv = appendChatMsg(data.reply, 'ai');
+    speakText(data.reply, msgDiv);
+  } catch (e) { appendChatMsg('⚠ Error connecting to AI backend.', 'ai'); }
+  btn.disabled = false; isSendingChat = false; input.focus();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('alert-modal-backdrop').classList.remove('open');
+    const win = document.getElementById('chat-window');
+    if (win.classList.contains('open')) toggleChat();
+  }
+});
+window.addEventListener('beforeunload', () => {
+  if (isRecording) { try { recognition.stop(); } catch(e) {} stopMic(); }
+  window.speechSynthesis && window.speechSynthesis.cancel();
+});
+</script>
+</body>
 </html>

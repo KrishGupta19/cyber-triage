@@ -43,15 +43,31 @@ def train_gnn():
     torch.save(model.state_dict(), 'models/gnn_baseline.pt')
     print("Training complete. Model saved to models/gnn_baseline.pt")
 
-    # Compute and save baseline reconstruction error statistics for score calibration
+    # Compute and save baseline reconstruction error using the same combined
+    # metric (70% feature + 30% structural) that get_anomaly_score uses at
+    # runtime, so the saved p95 is on the same scale as live scores.
     model.eval()
     with torch.no_grad():
-        _, _, x_hat_baseline = model(data)
-        feat_errors = torch.mean((data.x - x_hat_baseline)**2, dim=1)
-        p95 = torch.quantile(feat_errors, 0.95).item()
-        p99 = torch.quantile(feat_errors, 0.99).item()
+        z_b, adj_hat_b, x_hat_b = model(data)
+        feat_errors = torch.mean((data.x - x_hat_b) ** 2, dim=1)
+
+        if data.edge_index.size(1) > 0:
+            src = data.edge_index[0]
+            edge_struct_err = (1.0 - adj_hat_b) ** 2
+            node_struct_err = torch.zeros(z_b.size(0))
+            node_count      = torch.zeros(z_b.size(0))
+            node_struct_err.scatter_add_(0, src, edge_struct_err)
+            node_count.scatter_add_(0, src, torch.ones_like(edge_struct_err))
+            node_struct_err = node_struct_err / node_count.clamp(min=1.0)
+            combined = 0.7 * feat_errors + 0.3 * node_struct_err
+        else:
+            combined = feat_errors
+
+        p95 = torch.quantile(combined, 0.95).item()
+        p99 = torch.quantile(combined, 0.99).item()
+
     torch.save({'p95_error': p95, 'p99_error': p99}, 'models/anomaly_threshold.pt')
-    print(f"Baseline error p95={p95:.6f}  p99={p99:.6f} saved to models/anomaly_threshold.pt")
+    print(f"Baseline combined-error p95={p95:.6f}  p99={p99:.6f} saved to models/anomaly_threshold.pt")
 
 if __name__ == "__main__":
     train_gnn()
